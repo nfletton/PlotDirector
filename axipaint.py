@@ -96,6 +96,7 @@ def process_axidraw_file(axidraw_file, webhook_url=""):
                     statement = line.strip()
                     if statement:
                         process_statement(ad, statement)
+            ad.moveto(0.0, 0.0)
             ad.disconnect()
         else:
             print("AxiDraw not connected.")
