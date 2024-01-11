@@ -1,6 +1,9 @@
 import ast
 import os
+import re
 import sys
+
+from axidrawinternal.axidraw import requests
 from pyaxidraw import axidraw
 
 ad = axidraw.AxiDraw()
@@ -71,18 +74,19 @@ def process_option(axi_draw_instance, option_parts):
 
 
 def process_statement(axi_draw_instance, statement):
-    statement_parts = statement.strip().split(' ')
+    if statement[0] == '#':
+        print(statement)
+    else:
+        statement_parts = re.split(r'\s+', statement)
 
-    match statement_parts[0]:
-        case '#':
-            print(statement)
-        case 'options':
-            process_option(axi_draw_instance, statement_parts[1:])
-        case _:
-            process_function(axi_draw_instance, statement_parts)
+        match statement_parts[0]:
+            case 'options':
+                process_option(axi_draw_instance, statement_parts[1:])
+            case _:
+                process_function(axi_draw_instance, statement_parts)
 
 
-def process_axidraw_file(axidraw_file):
+def process_axidraw_file(axidraw_file, webhook_url=""):
     if os.path.isfile(axidraw_file):
         ad.interactive()
         connected = ad.connect()
@@ -97,8 +101,18 @@ def process_axidraw_file(axidraw_file):
             print("AxiDraw not connected.")
     else:
         print(f"File '{axidraw_file}' does not exist.")
+    notify("Drawing completed", webhook_url)
+
+
+def notify(message, webhook_url):
+    if webhook_url:
+        requests.post(f"{webhook_url}", data=message.encode(encoding='utf-8'))
 
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    process_axidraw_file(filename)
+    if len(sys.argv) > 2:
+        webhook_url = sys.argv[2]
+    else:
+        webhook_url = ""
+    process_axidraw_file(filename, webhook_url)
