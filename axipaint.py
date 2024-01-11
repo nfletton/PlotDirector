@@ -89,7 +89,9 @@ def process_axidraw_file(axidraw_file):
         if connected:
             with open(axidraw_file, 'r') as file:
                 for line in file:
-                    process_statement(ad, line)
+                    statement = line.strip()
+                    if statement:
+                        process_statement(ad, statement)
             ad.disconnect()
         else:
             print("AxiDraw not connected.")
