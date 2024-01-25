@@ -20,6 +20,7 @@ AXI_PARAM_CASTS = {
     'pen_delay_up': [int],
     'const_speed': [bool],
     'model': [int],
+    'penlift': [int],
     'port': [int],
     'port_config': [int],
 
