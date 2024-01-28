@@ -90,6 +90,7 @@ def process_statement(axi_draw_instance, statement):
 def process_axidraw_file(axidraw_file, webhook_url=""):
     if os.path.isfile(axidraw_file):
         ad.interactive()
+        ad.options.penlift = 3
         connected = ad.connect()
         if connected:
             with open(axidraw_file, 'r') as file:
