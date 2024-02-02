@@ -40,6 +40,13 @@ AXI_PARAM_CASTS = {
 }
 
 
+# TODO: logging for command processing progression
+# TODO: ability to stop a plot
+# TODO: ability to start a plot part way through
+# TODO: ability to pause a plot and restart
+# TODO: improved commandline option processing
+# TODO: webhook notification of plot stages
+
 def notify(message, webhook):
     if webhook:
         requests.post(f"{webhook}", data=message.encode(encoding='utf-8'))
