@@ -1,12 +1,11 @@
 import ast
+import io
 import os
 import re
 import sys
 
 from axidrawinternal.axidraw import requests
 from pyaxidraw import axidraw
-
-ad = axidraw.AxiDraw()
 
 AXI_PARAM_CASTS = {
     'speed_pendown': [int],
@@ -41,6 +40,11 @@ AXI_PARAM_CASTS = {
 }
 
 
+def notify(message, webhook):
+    if webhook:
+        requests.post(f"{webhook}", data=message.encode(encoding='utf-8'))
+
+
 def convert_params(conversions, f_name, string_params):
     if f_name in conversions:
         return [func(string_params[i]) for i, func in enumerate(conversions[f_name])]
@@ -48,68 +52,80 @@ def convert_params(conversions, f_name, string_params):
         return []
 
 
-def process_function(axi_draw_instance, command_parts):
-    function_name = command_parts[0]
-    try:
-        if len(command_parts) > 1:
-            params = convert_params(AXI_PARAM_CASTS, function_name, command_parts[1:])
-        else:
-            params = []
+class AxiPaint:
+    def __init__(self):
+        self.ad = axidraw.AxiDraw()
 
-        axi_draw_function = getattr(axi_draw_instance, function_name)
-        axi_draw_function(*params)
-    except Exception as e:
-        print(f"Error executing command {function_name}: {e}")
+    definitions = {}
 
-
-def process_option(axi_draw_instance, option_parts):
-    if len(option_parts) > 1:
-        option_name = option_parts[0]
-        option_value = convert_params(AXI_PARAM_CASTS, option_name, option_parts[1:])[0]
+    def process_function(self, command_parts):
+        function_name = command_parts[0]
         try:
-            setattr(getattr(axi_draw_instance, 'options'), option_name, option_value)
+            if len(command_parts) > 1:
+                params = convert_params(AXI_PARAM_CASTS, function_name, command_parts[1:])
+            else:
+                params = []
+
+            axi_draw_function = getattr(self.ad, function_name)
+            axi_draw_function(*params)
         except Exception as e:
-            print(f"Error setting option '{option_name} to '{option_value}': {e}")
-    else:
-        print("No option name/value pair specified")
+            print(f"Error executing command {function_name}: {e}")
 
+    def process_option(self, option_parts):
+        if len(option_parts) > 1:
+            option_name = option_parts[0]
+            option_value = convert_params(AXI_PARAM_CASTS, option_name, option_parts[1:])[0]
+            try:
+                setattr(getattr(self.ad, 'options'), option_name, option_value)
+            except Exception as e:
+                print(f"Error setting option '{option_name} to '{option_value}': {e}")
+        else:
+            print("No option name/value pair specified")
 
-def process_statement(axi_draw_instance, statement):
-    if statement[0] == '#':
-        print(statement)
-    else:
+    def process_definition(self, statement):
+        name = statement.split()[0]
+        commands = statement.split(' ', 1)[1]
+        self.definitions[name] = commands
+
+    def process_statement(self, statement):
+        if statement[0] == '#':
+            print(statement)
+            return
         statement_parts = re.split(r'\s+', statement)
 
         match statement_parts[0]:
+            case 'def':
+                self.process_definition(statement[4:])
             case 'options':
-                process_option(axi_draw_instance, statement_parts[1:])
+                self.process_option(statement_parts[1:])
             case _:
-                process_function(axi_draw_instance, statement_parts)
+                if statement_parts[0] in self.definitions:
+                    commands = self.definitions[statement_parts[0]]
+                    self.process_stream(io.StringIO(commands))
+                else:
+                    self.process_function(statement_parts)
 
+    def process_stream(self, stream):
+        for line in stream:
+            statement = line.strip()
+            if statement:
+                self.process_statement(statement)
 
-def process_axidraw_file(axidraw_file, webhook_url=""):
-    if os.path.isfile(axidraw_file):
-        ad.interactive()
-        ad.options.penlift = 3
-        connected = ad.connect()
-        if connected:
-            with open(axidraw_file, 'r') as file:
-                for line in file:
-                    statement = line.strip()
-                    if statement:
-                        process_statement(ad, statement)
-            ad.moveto(0.0, 0.0)
-            ad.disconnect()
+    def process_axidraw_file(self, axidraw_file, webhook=""):
+        if os.path.isfile(axidraw_file):
+            self.ad.interactive()
+            self.ad.options.penlift = 3
+            connected = self.ad.connect()
+            if connected:
+                with open(axidraw_file, 'r') as file:
+                    self.process_stream(file)
+                self.ad.moveto(0.0, 0.0)
+                self.ad.disconnect()
+                notify("Pen plot completed", webhook)
+            else:
+                print("AxiDraw not connected.")
         else:
-            print("AxiDraw not connected.")
-    else:
-        print(f"File '{axidraw_file}' does not exist.")
-    notify("Drawing completed", webhook_url)
-
-
-def notify(message, webhook_url):
-    if webhook_url:
-        requests.post(f"{webhook_url}", data=message.encode(encoding='utf-8'))
+            print(f"File '{axidraw_file}' does not exist.")
 
 
 if __name__ == '__main__':
@@ -118,4 +134,5 @@ if __name__ == '__main__':
         webhook_url = sys.argv[2]
     else:
         webhook_url = ""
-    process_axidraw_file(filename, webhook_url)
+    axiPaint = AxiPaint()
+    axiPaint.process_axidraw_file(filename, webhook_url)
