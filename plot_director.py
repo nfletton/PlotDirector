@@ -1,4 +1,5 @@
 import ast
+import curses
 import io
 import os
 import re
@@ -59,7 +60,7 @@ def convert_params(conversions, f_name, string_params):
         return []
 
 
-class AxiPaint:
+class PlotDirector:
     def __init__(self):
         self.ad = axidraw.AxiDraw()
 
@@ -112,8 +113,19 @@ class AxiPaint:
                 else:
                     self.process_function(statement_parts)
 
-    def process_stream(self, stream):
+    def process_stream(self, screen, stream):
+        curses.cbreak()
+        screen.nodelay(True)
+
         for line in stream:
+            # get key press
+
+            key_press = screen.getch()
+
+            # compare key press
+            if key_press == ord('q'):
+                print("You pressed a key!")
+
             statement = line.strip()
             if statement:
                 self.process_statement(statement)
@@ -121,11 +133,12 @@ class AxiPaint:
     def process_axidraw_file(self, axidraw_file, webhook=""):
         if os.path.isfile(axidraw_file):
             self.ad.interactive()
+            # hardcoded penlift due to an API issue https://discord.com/channels/634791922749276188/634791923554451457/1200499591670407378
             self.ad.options.penlift = 3
             connected = self.ad.connect()
             if connected:
                 with open(axidraw_file, 'r') as file:
-                    self.process_stream(file)
+                    curses.wrapper(self.process_stream, file)
                 self.ad.moveto(0.0, 0.0)
                 self.ad.disconnect()
                 notify("Pen plot completed", webhook)
@@ -135,11 +148,32 @@ class AxiPaint:
             print(f"File '{axidraw_file}' does not exist.")
 
 
+def safe():
+    if input("Is the AxiDraw in the home position? (y/n): ").lower() != 'y':
+        print("\n*** 1. Turn off AxiDraw power supply.          ***")
+        print("*** 2. Move the carriage to the home position. ***")
+        print("*** 3. Turn the power supply back on.          ***")
+        return False
+    ad = axidraw.AxiDraw()
+    ad.interactive()
+    connected = ad.connect()
+    if connected:
+        has_power = True if int(ad.usb_query("QC\r").split(",")[1]) > 276 else False
+        ad.disconnect()
+        if not has_power:
+            print("\n*** AxiDraw power supply appears to be off. ****")
+        return has_power
+    else:
+        print("AxiDraw not connected.")
+        return False
+
+
 if __name__ == '__main__':
     filename = sys.argv[1]
     if len(sys.argv) > 2:
         webhook_url = sys.argv[2]
     else:
         webhook_url = ""
-    axiPaint = AxiPaint()
-    axiPaint.process_axidraw_file(filename, webhook_url)
+    if safe():
+        director = PlotDirector()
+        director.process_axidraw_file(filename, webhook_url)
