@@ -16,10 +16,8 @@ as this option cannot be set in the command text file due to a bug in the Python
 necessary for your setup.
 
 ## Feature Wishlist
-- process keyboard input while running
-  - ability to stop a plot and restart at stop point  
-  - ability to pause a plot and restart
-- display of plot progression
+- ability to halt a plot at any point and restart plot at another time from the halt point
+- display of plot progression (using Python curses)
   - distance traveled relative to total distance
   - time so far relative to total time estimate
 - logging for command processing progression

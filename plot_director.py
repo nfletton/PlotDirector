@@ -1,9 +1,9 @@
 import ast
 import curses
-import io
 import os
 import re
 import sys
+import time
 
 from axidrawinternal.axidraw import requests
 from pyaxidraw import axidraw
@@ -56,6 +56,7 @@ def convert_params(conversions, f_name, string_params):
 class PlotDirector:
     def __init__(self, ad):
         self.ad = ad
+        self.pause = False
 
     definitions = {}
 
@@ -98,6 +99,8 @@ class PlotDirector:
                 self.process_definition(statement[4:])
             case 'options':
                 self.process_option(statement_parts[1:])
+            case 'pause':
+                self.pause = True
             case _:
                 if statement_parts[0] in self.definitions:
                     commands = self.definitions[statement_parts[0]]
@@ -120,10 +123,13 @@ class PlotDirector:
 
             key_press = screen.getch()
 
-            # compare key press
-            if key_press == ord('q'):
-                print("You pressed a key!")
+            match key_press:
+                case _:
+                    pass
 
+            if self.pause:
+                print("Plot paused. Press 'c' to continue")
+                self.wait_on_continue(screen)
             statement = line.strip()
             if statement:
                 self.process_statement(statement)
@@ -137,6 +143,14 @@ class PlotDirector:
             notify("Pen plot completed", webhook)
         else:
             print(f"File '{axidraw_file}' does not exist.")
+
+    def wait_on_continue(self, screen):
+        while(self.pause):
+            time.sleep(1)
+            key_press = screen.getch()
+            if key_press == ord('c'):
+                self.pause = False
+                print("Continuing plot.......")
 
 
 def safe(ad):
