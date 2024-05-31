@@ -9,11 +9,11 @@ options pen_pos_up 60
 options pen_pos_down 30
 update
 penup
-def repeat_me1 penup\nmoveto 100 100\npendown\nlineto 120 120\npenup\n
-def repeat_me2 draw_path [[200.0,200.0],[250.0,250.0]]
-def repeat_me3 repeat_me2
-repeat_me1
+def repeat_me_1 penup | moveto 100 100 | pendown | lineto 120 120
+def repeat_me_2 draw_path [[200.0,200.0],[250.0,250.0]]
+def repeat_me_3 repeat_me_2
+repeat_me_1
 moveto 0.0 0.0
-repeat_me1
-repeat_me2
-repeat_me3
+repeat_me_1
+repeat_me_2
+repeat_me_3

@@ -109,7 +109,7 @@ class PlotDirector:
                     self.process_function(statement_parts)
 
     def process_definition_body(self, commands):
-        for command in commands.split(r'\n'):
+        for command in commands.split('|'):
             statement = command.strip()
             if statement:
                 self.process_statement(statement)
