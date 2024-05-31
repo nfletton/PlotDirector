@@ -84,8 +84,7 @@ class PlotDirector:
             print("No option name/value pair specified")
 
     def process_definition(self, statement):
-        name = statement.split()[0]
-        commands = statement.split(' ', 1)[1]
+        name, _, commands = statement.partition(' ')
         self.definitions[name] = commands
 
     def process_statement(self, statement):
@@ -102,9 +101,15 @@ class PlotDirector:
             case _:
                 if statement_parts[0] in self.definitions:
                     commands = self.definitions[statement_parts[0]]
-                    self.process_stream(io.StringIO(commands))
+                    self.process_definition_body(commands)
                 else:
                     self.process_function(statement_parts)
+
+    def process_definition_body(self, commands):
+        for command in commands.split(r'\n'):
+            statement = command.strip()
+            if statement:
+                self.process_statement(statement)
 
     def process_stream(self, screen, stream):
         curses.cbreak()
