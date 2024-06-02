@@ -8,6 +8,35 @@ Plot Director is a process that consumes plotter commands from a text file gener
 - Executes [AxiDraw Python API](https://axidraw.com/doc/py_api/) commands contained in a text file
 - Supports definition of reusable sets of API commands for operations such a paintbrush dipping and washing. 
 - Notification of plot completion via a webhook
+- Pausing plots at predefined positions
+
+## Command Input File Format
+Sample input files can be found in the [command_examples](command_examples) directory.
+
+A command file consists of:
+- **Comments**  
+  Any line starting with a `#` is interpreted as a comment.
+- **AxiDraw Interactive API Options**  
+  Any line beginning with `options` is interpreted as an 
+  [API Option](https://axidraw.com/doc/py_api/#setting-options) and 
+  results in a call to the respective API call 
+  e.g. `options pen_pos_down 30` results in a [call to](https://axidraw.com/doc/py_api/#pen_pos_down).
+- **AxiDraw Interactive API Functions**  
+  Any line beginning with the name of an 
+  [API Function](https://axidraw.com/doc/py_api/#functions-interactive)
+  results in a call to the respective API call  
+  e.g. `draw_path [[20.0,20.0],[190.0,20.0],[190.0,128.0],[20.0,128.0],[20.0,20.0]]`
+  results in a [call to](https://axidraw.com/doc/py_api/#draw_path).
+- **Pause Command**  
+  Lines matching the word `pause` causes processing of further commands to halt until the 
+  keyboard character 'c' is pressed to resume the plot.
+- **Reusable Command Sequences**  
+  Lines starting with `def ` define reusable blocks of API commands. 
+  These can be useful where repeated sequences of commands are required for 
+  tasks such as reloading or washing a paintbrush in a well. A simple definition
+  looks like `def repeat_me penup | moveto 100 100 | pendown | lineto 120 120`.
+  In this example the definition would be called with the line `repeat_me`.
+  
 
 ## Issues
 ### Hardcoded penlift
