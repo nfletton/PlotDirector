@@ -10,6 +10,24 @@ Plot Director is a process that consumes plotter commands from a text file gener
 - Notification of plot completion via a webhook
 - Pausing plots at predefined positions
 
+## Usage
+To use, create a Python virtual environment and run `pip install -r requirements.txt` to install 
+required packages (currently only the AxiDraw API)
+
+To run Plot Director: 
+```shell
+python plot_director.py <path to command file> <optional webhook URL>
+```
+
+For example, to run one of the included command file examples from 
+this directory in a Linux terminal, the run command would be:
+```shell
+python plot_director.py command_examples/pendown_penup.txt
+```
+Note: If running the above command in a Pycharm terminal window, the New Terminal Beta needs
+to be enabled in Pycharm  settings. If running the command from a Pycharm run configuration
+the 'Emulate terminal in output console' option must be set.
+
 ## Command Input File Format
 Sample input files can be found in the [command_examples](command_examples) directory.
 
@@ -45,8 +63,9 @@ as this option cannot be set in the command text file due to a bug in the Python
 necessary for your setup.
 
 ## Feature Wishlist
+- pretty up the console output either with the existing curses package or urwid
 - ability to halt a plot at any point and restart plot at another time from the halt point
-- display of plot progression (using Python curses)
+- display of plot progression
   - distance traveled relative to total distance
   - time so far relative to total time estimate
 - logging for command processing progression
