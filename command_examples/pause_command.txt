@@ -10,5 +10,7 @@ options pen_pos_down 30
 update
 penup
 moveto 100.0 100.0
-pause
+pause Hello World
 lineto 200 200
+pause
+lineto 150 100

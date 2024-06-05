@@ -70,6 +70,3 @@ necessary for your setup.
   - time so far relative to total time estimate
 - logging for command processing progression
 - improved commandline option processing
-- webhook notification of:
-  - pen change required
-  - drawing medium refill required

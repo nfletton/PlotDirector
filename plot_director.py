@@ -54,9 +54,10 @@ def convert_params(conversions, f_name, string_params):
 
 
 class PlotDirector:
-    def __init__(self, ad):
+    def __init__(self, ad, webhook_url):
         self.ad = ad
         self.pause = False
+        self.webhook_url = webhook_url
 
     definitions = {}
 
@@ -100,6 +101,7 @@ class PlotDirector:
             case 'options':
                 self.process_option(statement_parts[1:])
             case 'pause':
+                notify(f"Plot Paused: {statement[6:]}", webhook_url)
                 self.pause = True
             case _:
                 if statement_parts[0] in self.definitions:
@@ -134,13 +136,13 @@ class PlotDirector:
             if statement:
                 self.process_statement(statement)
 
-    def process_axidraw_file(self, axidraw_file, webhook=""):
+    def process_axidraw_file(self, axidraw_file):
         if os.path.isfile(axidraw_file):
             with open(axidraw_file, 'r') as file:
                 curses.wrapper(self.process_stream, file)
             self.ad.moveto(0.0, 0.0)
             self.ad.disconnect()
-            notify("Pen plot completed", webhook)
+            notify("Pen plot completed", webhook_url)
         else:
             print(f"File '{axidraw_file}' does not exist.")
 
@@ -178,7 +180,7 @@ if __name__ == '__main__':
     connected = ad.connect()
     if connected:
         if safe(ad):
-            director = PlotDirector(ad)
-            director.process_axidraw_file(filename, webhook_url)
+            director = PlotDirector(ad, webhook_url)
+            director.process_axidraw_file(filename)
     else:
         print("AxiDraw not connected.")
