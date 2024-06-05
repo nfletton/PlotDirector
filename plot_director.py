@@ -101,7 +101,9 @@ class PlotDirector:
             case 'options':
                 self.process_option(statement_parts[1:])
             case 'pause':
-                notify(f"Plot Paused: {statement[6:]}", webhook_url)
+                message = f"Plot Paused: {statement[6:]}"
+                notify(message, webhook_url)
+                print(message)
                 self.pause = True
             case _:
                 if statement_parts[0] in self.definitions:
