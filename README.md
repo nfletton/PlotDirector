@@ -8,7 +8,7 @@ Plot Director is a process that consumes plotter commands from a text file gener
 - Executes [AxiDraw Python API](https://axidraw.com/doc/py_api/) commands contained in a text file
 - Supports definition of reusable sets of API commands for operations such a paintbrush dipping and washing. 
 - Notification of plot completion via a webhook
-- Pausing plots at predefined positions
+- Pausing plots for pen color change
 
 ## Usage
 To use, create a Python virtual environment and run `pip install -r requirements.txt` to install 
@@ -22,11 +22,10 @@ python plot_director.py <path to command file> <optional webhook URL>
 For example, to run one of the included command file examples from 
 this directory in a Linux terminal, the run command would be:
 ```shell
-python plot_director.py command_examples/pendown_penup.txt
+python plot_director.py command_examples/pendown_penup.txt https://ntfy.sh/<your topic> 
 ```
-Note: If running the above command in a Pycharm terminal window, the New Terminal Beta needs
-to be enabled in Pycharm  settings. If running the command from a Pycharm run configuration
-the 'Emulate terminal in output console' option must be set.
+Note: It is best not to run in a Pycharm terminal window, even the New Terminal Beta,
+as the console output is less usable.
 
 ## Command Input File Format
 Sample input files can be found in the [command_examples](command_examples) directory.
@@ -35,7 +34,7 @@ A command file consists of:
 - **Comments**  
   Any line starting with a `#` is interpreted as a comment.
 - **AxiDraw Interactive API Options**  
-  Any line beginning with `options` is interpreted as an 
+  Any line beginning with `options ` is interpreted as an 
   [API Option](https://axidraw.com/doc/py_api/#setting-options) and 
   results in a call to the respective API call 
   e.g. `options pen_pos_down 30` results in a [call to](https://axidraw.com/doc/py_api/#pen_pos_down).
@@ -46,8 +45,9 @@ A command file consists of:
   e.g. `draw_path [[20.0,20.0],[190.0,20.0],[190.0,128.0],[20.0,128.0],[20.0,20.0]]`
   results in a [call to](https://axidraw.com/doc/py_api/#draw_path).
 - **Pause Command**  
-  Lines matching the word `pause` causes processing of further commands to halt until the 
-  keyboard character 'c' is pressed to resume the plot.
+  Any line beginning with `pause ` causes processing of further commands to halt until the 
+  keyboard character 'c' is pressed to resume the plot. Any characters after the command name
+  are interpreted as a message that is sent to the console and the optional webhook
 - **Reusable Command Sequences**  
   Lines starting with `def ` define reusable blocks of API commands. 
   These can be useful where repeated sequences of commands are required for 
