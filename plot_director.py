@@ -5,10 +5,10 @@ import re
 import sys
 import time
 
-from axidrawinternal.axidraw import requests
-from pyaxidraw import axidraw
+import requests
+from nextdraw import NextDraw
 
-AXI_PARAM_CASTS = {
+PARAM_CASTS = {
     'speed_pendown': [int],
     'speed_penup': [int],
     'accel': [int],
@@ -54,8 +54,8 @@ def convert_params(conversions, f_name, string_params):
 
 
 class PlotDirector:
-    def __init__(self, ad, webhook_url):
-        self.ad = ad
+    def __init__(self, nd, webhook_url):
+        self.ad = nd
         self.pause = False
         self.webhook_url = webhook_url
 
@@ -65,19 +65,19 @@ class PlotDirector:
         function_name = command_parts[0]
         try:
             if len(command_parts) > 1:
-                params = convert_params(AXI_PARAM_CASTS, function_name, command_parts[1:])
+                params = convert_params(PARAM_CASTS, function_name, command_parts[1:])
             else:
                 params = []
 
-            axi_draw_function = getattr(self.ad, function_name)
-            axi_draw_function(*params)
+            api_function = getattr(self.ad, function_name)
+            api_function(*params)
         except Exception as e:
             print(f"Error executing command {function_name}: {e}")
 
     def process_option(self, option_parts):
         if len(option_parts) > 1:
             option_name = option_parts[0]
-            option_value = convert_params(AXI_PARAM_CASTS, option_name, option_parts[1:])[0]
+            option_value = convert_params(PARAM_CASTS, option_name, option_parts[1:])[0]
             try:
                 setattr(getattr(self.ad, 'options'), option_name, option_value)
             except Exception as e:
@@ -138,15 +138,14 @@ class PlotDirector:
             if statement:
                 self.process_statement(statement)
 
-    def process_axidraw_file(self, axidraw_file):
-        if os.path.isfile(axidraw_file):
-            with open(axidraw_file, 'r') as file:
+    def process_commands(self, command_file):
+        if os.path.isfile(command_file):
+            with open(command_file, 'r') as file:
                 curses.wrapper(self.process_stream, file)
             self.ad.moveto(0.0, 0.0)
-            self.ad.disconnect()
             notify("Pen plot completed", webhook_url)
         else:
-            print(f"File '{axidraw_file}' does not exist.")
+            print(f"File '{command_file}' does not exist.")
 
     def wait_on_continue(self, screen):
         while(self.pause):
@@ -158,14 +157,14 @@ class PlotDirector:
 
 
 def safe(ad):
-    if input("Is the AxiDraw in the home position? (y/n): ").lower() != 'y':
-        print("\n*** 1. Turn off AxiDraw power supply.          ***")
+    if input("Is the NextDraw in the home position? (y/n): ").lower() != 'y':
+        print("\n*** 1. Turn off NextDraw power supply.          ***")
         print("*** 2. Move the carriage to the home position. ***")
         print("*** 3. Turn the power supply back on.          ***")
         return False
     has_power = True if int(ad.usb_query("QC\r").split(",")[1]) > 276 else False
     if not has_power:
-        print("\n*** AxiDraw power supply appears to be off. ****")
+        print("\n*** NextDraw power supply appears to be off. ****")
     return has_power
 
 
@@ -175,14 +174,19 @@ if __name__ == '__main__':
         webhook_url = sys.argv[2]
     else:
         webhook_url = ""
-    ad = axidraw.AxiDraw()
-    ad.interactive()
-    # hardcoded penlift due to an API issue https://discord.com/channels/634791922749276188/634791923554451457/1200499591670407378
-    ad.options.penlift = 3
-    connected = ad.connect()
+    nd = NextDraw()
+    nd.interactive()
+    nd.options.homing = False
+    nd.options.model = 2
+    nd.options.penlift = 3
+    nd.options.units = 2
+    connected = nd.connect()
     if connected:
-        if safe(ad):
-            director = PlotDirector(ad, webhook_url)
-            director.process_axidraw_file(filename)
+        if safe(nd):
+            director = PlotDirector(nd, webhook_url)
+            director.process_commands(filename)
+        nd.disconnect()
+
     else:
-        print("AxiDraw not connected.")
+        print("NextDraw not connected.")
+        sys.exit()

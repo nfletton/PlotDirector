@@ -1,7 +1,9 @@
 # SE/A3
 options model 2
+update
 # brushless servo
-# options penlift 3
+options penlift 3
+update
 # millimeter unit
 options units 2
 # max. safe pen up 67

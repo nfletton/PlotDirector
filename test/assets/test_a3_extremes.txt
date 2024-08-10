@@ -3,6 +3,9 @@
 # SE/A3
 options model 2
 
+# brushless servo
+options penlift 3
+
 # millimeter unit
 options units 2
 
@@ -13,3 +16,4 @@ lineto 420 0
 lineto 420 297
 lineto 0   297
 lineto 0   0
+penup

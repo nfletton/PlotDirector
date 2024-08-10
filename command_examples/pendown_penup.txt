@@ -1,9 +1,9 @@
 # SE/A3
-options model 2
+# options model 2
 # brushless servo
-# options penlift 3
+#options penlift 3
 # millimeter unit
-options units 2
+# options units 2
 # max. safe pen up 67
 options pen_pos_up 60
 options pen_pos_down 30
@@ -11,5 +11,9 @@ options pen_rate_lower 5
 options pen_rate_raise 5
 update
 penup
+moveto 10 10
+pendown
+penup
 moveto 20.0 20.0
 pendown
+penup

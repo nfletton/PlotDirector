@@ -1,17 +1,19 @@
-from pyaxidraw import axidraw
+from nextdraw import NextDraw
 
 
 if __name__ == '__main__':
-    ad = axidraw.AxiDraw()
-    ad.interactive()
-    connected = ad.connect()
+    nd = NextDraw()
+    nd.interactive()
+    nd.options.model = 2
+    nd.options.penlift = 3
+    connected = nd.connect()
     if connected:
-        p = ad.usb_query("QC\r").split(",")[1]
+        p = nd.usb_query("QC\r").split(",")[1]
         if int(p) > 275:
             print(f"Power is good ({p})")
         else:
             print(f"Power is low ({p})")
-        ad.disconnect()
+        nd.disconnect()
     else:
-        print("AxiDraw not connected.")
+        print("Plotter not connected.")
 

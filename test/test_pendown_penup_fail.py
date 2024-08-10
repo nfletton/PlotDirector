@@ -1,5 +1,5 @@
-from pyaxidraw import axidraw
-ad = axidraw.AxiDraw()
+from nextdraw import NextDraw
+ad = NextDraw()
 ad.interactive()
 
 if not ad.connect():
