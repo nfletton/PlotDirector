@@ -55,7 +55,7 @@ def convert_params(conversions, f_name, string_params):
 
 class PlotDirector:
     def __init__(self, nd, webhook_url):
-        self.ad = nd
+        self.nd = nd
         self.pause = False
         self.webhook_url = webhook_url
 
@@ -69,7 +69,7 @@ class PlotDirector:
             else:
                 params = []
 
-            api_function = getattr(self.ad, function_name)
+            api_function = getattr(self.nd, function_name)
             api_function(*params)
         except Exception as e:
             print(f"Error executing command {function_name}: {e}")
@@ -79,7 +79,7 @@ class PlotDirector:
             option_name = option_parts[0]
             option_value = convert_params(PARAM_CASTS, option_name, option_parts[1:])[0]
             try:
-                setattr(getattr(self.ad, 'options'), option_name, option_value)
+                setattr(getattr(self.nd, 'options'), option_name, option_value)
             except Exception as e:
                 print(f"Error setting option '{option_name} to '{option_value}': {e}")
         else:
@@ -142,8 +142,8 @@ class PlotDirector:
         if os.path.isfile(command_file):
             with open(command_file, 'r') as file:
                 curses.wrapper(self.process_stream, file)
-            self.ad.moveto(0.0, 0.0)
-            notify("Pen plot completed", webhook_url)
+            self.nd.moveto(0.0, 0.0)
+            notify("Plot completed", webhook_url)
         else:
             print(f"File '{command_file}' does not exist.")
 
