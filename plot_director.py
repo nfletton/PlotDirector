@@ -118,11 +118,11 @@ class PlotDirector:
             if statement:
                 self.process_statement(statement)
 
-    def process_stream(self, screen, stream):
+    def process_stream(self, screen, commands):
         curses.cbreak()
         screen.nodelay(True)
 
-        for line in stream:
+        for command in commands:
             # get key press
 
             key_press = screen.getch()
@@ -134,26 +134,31 @@ class PlotDirector:
             if self.pause:
                 print("Plot paused. Press 'c' to continue")
                 self.wait_on_continue(screen)
-            statement = line.strip()
+            statement = command.strip()
             if statement:
                 self.process_statement(statement)
 
-    def process_commands(self, command_file):
-        if os.path.isfile(command_file):
-            with open(command_file, 'r') as file:
-                curses.wrapper(self.process_stream, file)
-            self.nd.moveto(0.0, 0.0)
-            notify("Plot completed", webhook_url)
-        else:
-            print(f"File '{command_file}' does not exist.")
+    def process_commands(self, commands):
+        curses.wrapper(self.process_stream, commands)
+        self.nd.moveto(0.0, 0.0)
+        notify("Plot completed", webhook_url)
 
     def wait_on_continue(self, screen):
-        while(self.pause):
+        while (self.pause):
             time.sleep(1)
             key_press = screen.getch()
             if key_press == ord('c'):
                 self.pause = False
                 print("Continuing plot.......")
+
+    def process_setup_options(self, commands):
+        command_count = 0
+        for command in commands:
+            if command != "# OPTIONS: END":
+                director.process_statement(command)
+                command_count += 1
+            else:
+                return commands[command_count + 1:]
 
 
 def safe(ad):
@@ -169,24 +174,30 @@ def safe(ad):
 
 
 if __name__ == '__main__':
-    filename = sys.argv[1]
+    command_file = sys.argv[1]
     if len(sys.argv) > 2:
         webhook_url = sys.argv[2]
     else:
         webhook_url = ""
+
+    if os.path.isfile(command_file):
+        with open(command_file, 'r') as file:
+            commands = [line.strip() for line in file]
+    else:
+        print(f"File '{command_file}' does not exist.")
+        quit()
+
     nd = NextDraw()
     nd.interactive()
-    nd.options.homing = False
-    nd.options.model = 2
-    nd.options.penlift = 3
-    nd.options.units = 2
+    director = PlotDirector(nd, webhook_url)
+
+    commands = director.process_setup_options(commands)
+
     connected = nd.connect()
     if connected:
         if safe(nd):
-            director = PlotDirector(nd, webhook_url)
-            director.process_commands(filename)
-        nd.disconnect()
-
+            director.process_commands(commands)
+            nd.disconnect()
     else:
         print("NextDraw not connected.")
-        sys.exit()
+    quit()
