@@ -144,7 +144,7 @@ class PlotDirector:
         notify("Plot completed", webhook_url)
 
     def wait_on_continue(self, screen):
-        while (self.pause):
+        while self.pause:
             time.sleep(1)
             key_press = screen.getch()
             if key_press == ord('c'):
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     if os.path.isfile(command_file):
         with open(command_file, 'r') as file:
-            commands = [line.strip() for line in file]
+            command_list = [line.strip() for line in file]
     else:
         print(f"File '{command_file}' does not exist.")
         quit()
@@ -191,12 +191,12 @@ if __name__ == '__main__':
     nd.interactive()
     director = PlotDirector(nd, webhook_url)
 
-    commands = director.process_setup_options(commands)
+    command_list = director.process_setup_options(command_list)
 
     connected = nd.connect()
     if connected:
         if safe(nd):
-            director.process_commands(commands)
+            director.process_commands(command_list)
             nd.disconnect()
     else:
         print("NextDraw not connected.")
