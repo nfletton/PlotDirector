@@ -47,8 +47,8 @@ class TestNextDrawCommandProcessing(unittest.TestCase):
 
     def test_process_option(self):
         director = PlotDirector(NextDraw(), '')
-        director.process_option(['units', '2'])
-        assert operator.attrgetter('options.units')(director.ad) == 2
+        director.apply_option(['units', '2'])
+        assert operator.attrgetter('options.units')(director.nd) == 2
 
     @patch.object(NextDraw, "draw_path")
     def test_process_statement_with_function(self, mock_method):
@@ -59,7 +59,7 @@ class TestNextDrawCommandProcessing(unittest.TestCase):
     def test_process_statement_with_option(self):
         director = PlotDirector(NextDraw(), '')
         director.process_statement('options delay 20000')
-        assert operator.attrgetter('options.delay')(director.ad) == 20000
+        assert operator.attrgetter('options.delay')(director.nd) == 20000
 
     def test_process_statement_with_definition(self):
         director = PlotDirector(NextDraw(), '')

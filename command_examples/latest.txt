@@ -1,0 +1,36 @@
+model 2
+penlift 3
+units 2
+pen_pos_up 47
+pen_pos_down 33
+accel 50
+speed_pendown 10
+speed_penup 35
+# END_OPTIONS
+def refill_blue_steel_w0 draw_path [[35.0,50.0],[46.0,44.0],[24.0,44.0],[46.0,56.0],[24.0,56.0],[35.0,50.0]] | moveto 100 100 | delay 1000
+# END_DEFINITIONS
+# Layer: base
+pause Color Change to null
+moveto 0 0
+pendown
+penup
+moveto 20 20
+delay 2000
+moveto 25 25
+pen_pos_up 67
+update
+pendown
+penup
+delay 2000
+draw_path [[25.98,14.848],[69.338,15.153],[69.122,45.898]]
+draw_path [[65.84,52.45],[68.483,52.36],[67.226,15.648],[29.57,16.937]]
+pen_pos_up 43
+update
+pendown
+penup
+delay 2000
+draw_path [[67.197,18.438],[65.839,52.478],[27.843,50.962],[29.201,16.922],[67.197,18.438]]
+draw_path [[29.2,16.95],[26.557,17.04],[26.557,17.04],[27.814,53.752],[29.986,53.678]]
+# Test pause command displays message
+# pause This is a message about the pause
+draw_path [[29.974,53.877],[26.104,53.849],[26.377,15.25],[26.377,15.25],[68.936,15.551],[68.663,54.15],[63.432,54.113]]
