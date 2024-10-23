@@ -107,6 +107,9 @@ class Initializing(State):
     def on_event(self, event):
         if self.init_plot():
             if self.has_power():
+                # give a heads up that in paused state
+                self.nd.moveto(5, 5)
+                self.nd.moveto(0, 0)
                 return States.PAUSED, []
             else:
                 return States.FINISHED, [Initializing.PWR_WARNING]
@@ -145,7 +148,11 @@ class Plotting(State):
                     match name:
                         case "pause":
                             self.nd.moveto(0.0, 0.0)
-                            return States.PAUSED, [f"Paused in script: {' '.join(params)}"]
+                            if params:
+                                message = ' '.join(params)
+                            else:
+                                message = "Paused in script"
+                            return States.PAUSED, [message]
                         case _:
                             self.process_statement(name, params)
                 else:
@@ -203,10 +210,12 @@ class Paused(State):
             case Events.Q:
                 return States.FINISHED, []
             case Events.C:
+                # end interactive context
                 self.nd.penup()
                 self.nd.moveto(0, 0)
                 self.nd.block()
                 self.nd.disconnect()
+                # begin plot context
                 self.nd.plot_setup()
                 return States.CALIBRATING, []
         sleep(1)
@@ -214,56 +223,60 @@ class Paused(State):
 
 
 class Calibrating(State):
+    STEP_SIZE = 0.1
+    plot_commands = {
+        curses.KEY_LEFT: ("walk_mmx", -STEP_SIZE),
+        curses.KEY_RIGHT: ("walk_mmx", STEP_SIZE),
+        curses.KEY_UP: ("walk_mmy", STEP_SIZE),
+        curses.KEY_DOWN: ("walk_mmy", -STEP_SIZE)
+    }
+
     def __init__(self, nd, options):
         super().__init__(nd)
         self.options = options
-        self.help_text = ["Run offset test SVG: F2", "Decrement x axis: Left", "Increment x axis: Right",
-                          "Increment y axis: Up", "Decrement y axis: Down", "Init. plotting: p"]
+        self.help_text = ["Run offset test SVG: F2",
+                          "Decrement x axis: Left",
+                          "Increment x axis: Right",
+                          "Increment y axis: Up",
+                          "Decrement y axis: Down",
+                          "Init. plotting: p"]
 
     def on_event(self, event):
-        match event:
-            case curses.KEY_F2:
-                self.nd.options.mode = "plot"
-                self.nd.plot_setup()
-                self.nd.plot_run()
-                self.nd.plot_setup(ALIGNMENT_SVG)
-                self.nd.options.model = self.options['model'][0]
-                self.nd.options.pen_pos_up = self.options['pen_pos_up'][0]
-                self.nd.options.pen_pos_down = self.options['pen_pos_down'][0]
-                self.nd.plot_run()
-                return None, []
-            case curses.KEY_LEFT:
-                self.nd.options.mode = "utility"
-                self.nd.options.utility_cmd = "walk_mmx"
-                self.nd.options.dist = -0.1
-                self.nd.plot_run()
-                return None, []
-            case curses.KEY_RIGHT:
-                self.nd.options.mode = "utility"
-                self.nd.options.utility_cmd = "walk_mmx"
-                self.nd.options.dist = 0.1
-                self.nd.plot_run()
-                return None, []
-            case curses.KEY_UP:
-                self.nd.options.mode = "utility"
-                self.nd.options.utility_cmd = "walk_mmy"
-                self.nd.options.dist = 0.1
-                self.nd.plot_run()
-                return None, []
-            case curses.KEY_DOWN:
-                self.nd.options.mode = "utility"
-                self.nd.options.utility_cmd = "walk_mmy"
-                self.nd.options.dist = -0.1
-                self.nd.plot_run()
-                return None, []
-            case Events.P:
-                self.nd.options.mode = "plot"
-                self.nd.plot_setup()
-                self.nd.options.model = self.options['model'][0]
-                self.nd.plot_run()
-                return States.INITIALIZING, []
+
+        if event in self.plot_commands:
+            self.execute_utility(self.plot_commands[event])
+            return None, []
+        elif event == curses.KEY_F2:
+            self.plot_alignment_svg()
+            return None, []
+        elif event == Events.P:
+            self.reset_home_position()
+            return States.INITIALIZING, []
         sleep(0.5)
         return None, []
+
+    def execute_utility(self, cmd):
+        utility_cmd, dist = cmd
+        self.nd.options.mode = "utility"
+        self.nd.options.utility_cmd = utility_cmd
+        self.nd.options.dist = dist
+        self.nd.plot_run()
+
+    def plot_alignment_svg(self):
+        self.reset_home_position()
+
+        self.nd.plot_setup(ALIGNMENT_SVG)
+        self.nd.options.model = self.options['model'][0]
+        self.nd.options.penlift = self.options['penlift'][0]
+        self.nd.options.pen_pos_up = self.options['pen_pos_up'][0]
+        self.nd.options.pen_pos_down = self.options['pen_pos_down'][0]
+        self.nd.plot_run()
+
+    def reset_home_position(self):
+        self.nd.options.mode = "plot"
+        self.nd.plot_setup()
+        self.nd.options.model = self.options['model'][0]
+        self.nd.plot_run()
 
 
 class Finishing(State):
