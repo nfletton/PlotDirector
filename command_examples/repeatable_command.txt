@@ -1,21 +1,14 @@
-# SE/A3
-options model 2
-update
-# brushless servo
-options penlift 3
-update
-# millimeter unit
-options units 2
-# max. safe pen up 67
-options pen_pos_up 60
-options pen_pos_down 30
-update
-penup
-def repeat_me_1 penup | moveto 100 100 | pendown | lineto 120 120
-def repeat_me_2 draw_path [[200.0,200.0],[250.0,250.0]]
-def repeat_me_3 repeat_me_2
-repeat_me_1
-moveto 0.0 0.0
+model 2
+penlift 3
+units 2
+pen_pos_up 47
+pen_pos_down 33
+accel 50
+speed_pendown 10
+speed_penup 35
+# END_OPTIONS
+def repeat_me_1 penup | moveto 20 20 | pendown | lineto 40 40 | draw_path [[50,50],[70,50],[70,70],[50,70],[50,50]] | moveto 0 0
+def repeat_me_2 repeat_me_1
+# END_DEFINITIONS
 repeat_me_1
 repeat_me_2
-repeat_me_3

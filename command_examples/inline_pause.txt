@@ -1,0 +1,18 @@
+model 2
+penlift 3
+units 2
+pen_pos_up 47
+pen_pos_down 33
+accel 50
+speed_pendown 10
+speed_penup 35
+# END_OPTIONS
+# END_DEFINITIONS
+penup
+moveto 30.0 30.0
+pause Change pen
+moveto 20.0 20.0
+lineto 50 50
+pause
+moveto 50 50
+lineto 30 20

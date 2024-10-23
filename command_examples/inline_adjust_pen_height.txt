@@ -1,0 +1,32 @@
+model 2
+penlift 3
+units 2
+pen_pos_up 47
+pen_pos_down 33
+accel 50
+speed_pendown 10
+speed_penup 10
+pen_rate_lower 1
+pen_rate_raise 1
+# END_OPTIONS
+# END_DEFINITIONS
+penup
+pen_pos_up 67
+update
+delay 2000
+pendown
+penup
+pen_pos_up 47
+update
+moveto 20 20
+pendown
+penup
+pendown
+pen_pos_down 43
+update
+delay 2000
+penup
+pendown
+pen_pos_down 33
+update
+penup
