@@ -174,6 +174,7 @@ class Plotting(State):
         if name in API_OPTION_CASTS:
             if hasattr(getattr(self.nd, "options"), name):
                 self.set_option(name, params)
+                self.nd.update()
         else:
             if hasattr(self.nd, name):
                 self.run_function(name, params)
