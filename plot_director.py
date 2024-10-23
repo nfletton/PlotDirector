@@ -3,6 +3,7 @@ import curses
 import os
 import re
 import sys
+from curses.ascii import LF
 from enum import Enum
 from time import sleep
 
@@ -71,10 +72,11 @@ class States(Enum):
 
 
 class Events:
-    A = ord('a')
     C = ord('c')
+    K = ord('k')
     P = ord('p')
     Q = ord('q')
+    S = ord('s')
     DEFAULT = ord('w')
 
 
@@ -134,12 +136,12 @@ class Plotting(State):
         super().__init__(nd)
         self.definitions = definitions
         self.commands = commands
-        self.help_text = ["Pause: p"]
+        self.help_text = ["Pause: s"]
 
     def on_event(self, event):
         self.messages = []
         match event:
-            case Events.P:
+            case Events.S:
                 self.nd.moveto(0.0, 0.0)
                 return States.PAUSED, ["Manually paused"]
             case Events.DEFAULT:
@@ -201,7 +203,7 @@ class Plotting(State):
 class Paused(State):
     def __init__(self, nd):
         super().__init__(nd)
-        self.help_text = ["Plot: p", "Calibrate: c", "Quit: q"]
+        self.help_text = ["Plot: p", "Calibrate: k", "Quit: q"]
 
     def on_event(self, event):
         match event:
@@ -209,7 +211,7 @@ class Paused(State):
                 return States.PLOTTING, []
             case Events.Q:
                 return States.FINISHED, []
-            case Events.C:
+            case Events.K:
                 # end interactive context
                 self.nd.penup()
                 self.nd.moveto(0, 0)
@@ -239,7 +241,7 @@ class Calibrating(State):
                           "Increment x axis: Right",
                           "Increment y axis: Up",
                           "Decrement y axis: Down",
-                          "Init. plotting: p"]
+                          "Continue: c"]
 
     def on_event(self, event):
 
@@ -249,7 +251,7 @@ class Calibrating(State):
         elif event == curses.KEY_F2:
             self.plot_alignment_svg()
             return None, []
-        elif event == Events.P:
+        elif event == Events.C:
             self.reset_home_position()
             return States.INITIALIZING, []
         sleep(0.5)
@@ -283,10 +285,10 @@ class Finishing(State):
     def __init__(self, nd, webhook):
         super().__init__(nd)
         self.webhook = webhook
-        self.help_text = ["Quit: q"]
+        self.help_text = ["Exit: <enter>"]
 
     def on_event(self, event):
-        if event == Events.Q:
+        if event == LF:
             self.nd.moveto(0.0, 0.0)
             self.nd.disconnect()
             notify("Plot completed", self.webhook)
