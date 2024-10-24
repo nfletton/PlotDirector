@@ -8,8 +8,8 @@ speed_pendown 10
 speed_penup 10
 pen_rate_lower 1
 pen_rate_raise 1
-# END_OPTIONS
-# END_DEFINITIONS
+::END_OPTIONS::
+::END_DEFINITIONS::
 penup
 pen_pos_up 67
 delay 2000

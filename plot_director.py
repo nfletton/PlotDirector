@@ -343,7 +343,7 @@ class StateMachine:
     def extract_setup_options(self):
         options = {}
         for statement in self.raw_plot_data:
-            if statement[1] != "END_OPTIONS":
+            if statement[0] != "::END_OPTIONS::":
                 name = statement[0]
                 options[name] = convert_params(API_OPTION_CASTS, name, statement[1:])
             else:
@@ -374,9 +374,9 @@ class StateMachine:
         definitions = {}
 
         for statement in self.raw_plot_data:
-            name = statement[1]
-            body = statement[2:]
-            if name == "END_DEFINITIONS":
+            name = statement[0]
+            body = statement[1:]
+            if name == "::END_DEFINITIONS::":
                 self.raw_plot_data = self.raw_plot_data[len(definitions) + 1:]
                 break
             else:
