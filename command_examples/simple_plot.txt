@@ -1,0 +1,15 @@
+model 2
+penlift 3
+units 2
+pen_pos_up 47
+pen_pos_down 33
+accel 50
+speed_pendown 10
+speed_penup 35
+::END_OPTIONS::
+::END_DEFINITIONS::
+penup
+moveto 20 20
+pendown
+lineto 40 40
+draw_path [[50,50],[70,50],[70,70],[50,70],[50,50]]
