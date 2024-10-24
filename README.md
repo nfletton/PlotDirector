@@ -41,15 +41,25 @@ An input file consists of:
 
 
 ### NextDraw Interactive API Options  
-Any line in the input file beginning with the name of 
+Lines in the input file beginning with the name of 
 an [API Option](https://bantam.tools/nd_py/#setting-options) results in a call to the respective API call. 
 If placed in the options section of the input file, the option is
-set along with other default options before `connect()` calls. 
+set along with other default options before calls to `connect()`. 
 
-Options placed inline with the plot commands are set as they occur 
-and are automatically followed by a call to `update()`
+Options placed inline in the plot commands section of the input file 
+are set as they occur 
+and automatically followed by a call to `update()`
    
 e.g. `pen_pos_down 30` results in a [call to](https://bantam.tools/nd_py/#pen_pos_down).
+
+### Reusable Command Sequences
+Lines in the definitions section of the input file
+define reusable blocks of API commands.
+This is useful when repeated sequences of commands are needed for 
+tasks such as reloading or washing a paintbrush in a well. A simple definition
+looks like `repeat_me penup | moveto 100 100 | pendown | lineto 120 120`.
+In this example the definition would be called by its name with the line `repeat_me` in
+the plot commands section of the input file..
 
 
 ### NextDraw Interactive API Functions
@@ -65,14 +75,3 @@ the user enters the continue console command to resume the plot.
 
 Any characters after the command name are interpreted as a message which is sent to the console 
 and the optional webhook.
-
-### Reusable Command Sequences
-Lines starting with `def ` in the definitions section of the input file,
-define reusable blocks of API commands. These are useful when 
-repeated sequences of commands are required for 
-tasks such as reloading or washing a paintbrush in a well. A simple definition
-looks like `def repeat_me penup | moveto 100 100 | pendown | lineto 120 120`.
-In this example the definition would be called with the line `repeat_me`.
-
-
-
