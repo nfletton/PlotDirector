@@ -80,6 +80,29 @@ class Events:
     DEFAULT = ord('w')
 
 
+class Statistics:
+    def __init__(self, commands):
+        self.commands = commands
+        self.total_commands = len(commands)
+        self.progress_commands = 9999  # forces stats to display on initialization
+        self.total_penup_distance, self.total_pendown_distance = self.calculate_distances(self.commands)
+        self.progress_penup_distance = 0.0
+        self.progress_pendown_distance = 0.0
+        self.changed = True
+
+    def calculate_distances(self, commands):
+        # TODO: calculate distances and their progress
+        return 0.0, 0.0
+
+    def update(self):
+        commands_processed = self.total_commands - len(self.commands)
+        if commands_processed != self.progress_commands:
+            self.changed = True
+            self.progress_commands = commands_processed
+        else:
+            self.changed = False
+
+
 class GuiData:
     def __init__(self):
         self.warnings = []
@@ -324,6 +347,7 @@ class StateMachine:
         self.state = self.states[States.INITIALIZING]
         self.messages = []
         self.new_messages = False
+        self.stats = Statistics(self.commands)
 
     def on_event(self, event):
         next_state, messages = self.state.on_event(event)
@@ -334,6 +358,7 @@ class StateMachine:
             self.new_messages = False
         if next_state is not None:
             self.state = self.states[next_state]
+        self.stats.update()
         return self.state
 
     def read_plot_data(self, filename):
@@ -419,7 +444,7 @@ class PlotDirector:
     def start(self, stdscr):
         stdscr.nodelay(True)
 
-        status_win, warning_win = self.init_windows(stdscr)
+        state_win, stats_win, warning_win, progress_win = self.init_windows(stdscr)
         cursor_location = (0, 0)
 
         machine = StateMachine(self.filename, self.webhook)
@@ -431,7 +456,7 @@ class PlotDirector:
             if key_press > 0:
                 match key_press:
                     case curses.KEY_RESIZE:
-                        self.resize_windows(stdscr, status_win, warning_win)
+                        self.resize_windows(stdscr, state_win, stats_win, warning_win, progress_win)
                         self.resized_win = True
                     case _:
                         # Send user character input as event to current state
@@ -441,54 +466,76 @@ class PlotDirector:
                 new_state = machine.on_event(Events.DEFAULT)
 
             if isinstance(new_state, Quit):
-                status_win.move(*cursor_location)
+                state_win.move(*cursor_location)
                 break
             if new_state != current_state:
                 current_state = new_state
-                cursor_location = self.update_status_window(status_win, current_state)
+                cursor_location = self.update_state_window(state_win, current_state)
             elif self.resized_win:
-                cursor_location = self.update_status_window(status_win, current_state)
+                cursor_location = self.update_state_window(state_win, current_state)
                 self.update_warning_window(warning_win, machine.messages)
                 self.resized_win = False
             if machine.new_messages:
                 self.update_warning_window(warning_win, machine.messages)
+            if machine.stats.changed:
+                self.update_stats_window(stats_win, machine.stats)
             stdscr.move(*cursor_location)
+            # stdscr.refresh()
 
     def init_windows(self, stdscr):
-        status_win = curses.newwin(1,1,0,0)
-        status_win.keypad(True)
-        warning_win = curses.newwin(1,1,2,0)
+        state_win = curses.newwin(1, 1, 0, 0)
+        state_win.keypad(True)
+        stats_win = curses.newwin(1, 1, 2, 0)
+        stats_win.keypad(True)
+        warning_win = curses.newwin(1, 1, 4, 0)
         warning_win.keypad(True)
-        self.resize_windows(stdscr, status_win, warning_win)
-        return status_win, warning_win
+        progress_win = curses.newwin(1, 1, 0, 2)
+        progress_win.keypad(True)
+        self.resize_windows(stdscr, state_win, stats_win, warning_win, progress_win)
+        return state_win, stats_win, warning_win, progress_win
 
-
-    def resize_windows(self, stdscr, status_win, warning_win):
+    def resize_windows(self, stdscr, state_win, stats_win, warning_win, progress_win):
         y, x = stdscr.getmaxyx()
 
+        STATE_WIN_SIZE = 14
+        STATS_WIN_SIZE = 6
         col_1_size = (y, int(x / 2))
         col_2_size = (y, x - col_1_size[1])
         col_1_pos = (0, 0)
-        col_2_pos = (0, col_2_size[1])
-        win_1_size = (int(y / 2), col_1_size[1])
-        win_2_size = (y - win_1_size[0], col_1_size[1])
+        col_2_pos = (0, col_1_size[1])
+        win_1_size = (STATE_WIN_SIZE, col_1_size[1])
+        win_2_size = (STATS_WIN_SIZE, col_1_size[1])
+        win_3_size = (y - win_1_size[0] - win_2_size[0], col_1_size[1])
+        win_4_size = (y, col_2_size[1])
         win_1_pos = (0, 0)
         win_2_pos = (win_1_size[0], 0)
+        win_3_pos = (win_1_size[0] + win_2_size[0], 0)
+        win_4_pos = col_2_pos
 
         stdscr.clear()
         stdscr.refresh()
-        status_win.clear()
+        state_win.clear()
+        stats_win.clear()
         warning_win.clear()
-        status_win.resize(win_1_size[0], win_1_size[1])
-        warning_win.resize(win_2_size[0], win_2_size[1])
-        warning_win.mvwin(win_2_pos[0], win_2_pos[1])
-        status_win.box()
+        progress_win.clear()
+        state_win.resize(win_1_size[0], win_1_size[1])
+        stats_win.resize(win_2_size[0], win_2_size[1])
+        stats_win.mvwin(win_2_pos[0], win_2_pos[1])
+        warning_win.resize(win_3_size[0], win_3_size[1])
+        warning_win.mvwin(win_3_pos[0], win_3_pos[1])
+        progress_win.resize(win_4_size[0], win_4_size[1])
+        progress_win.mvwin(win_4_pos[0], win_4_pos[1])
+        state_win.box()
+        stats_win.box()
         warning_win.box()
+        progress_win.box()
+        state_win.refresh()
+        stats_win.refresh()
         warning_win.refresh()
-        status_win.refresh()
+        progress_win.refresh()
         self.resized_win = True
 
-    def update_status_window(self, window, state):
+    def update_state_window(self, window, state):
         window.clear()
         window.addstr(
             1, 2,
@@ -500,11 +547,20 @@ class PlotDirector:
                 option
             )
         y, x = window.getyx()
-        window.addstr(y + 2, 2,'>>> ')
+        window.addstr(y + 2, 2, '>>> ')
 
         window.box()
         window.refresh()
         return window.getyx()
+
+    def update_stats_window(self, window, stats):
+        window.clear()
+        window.addstr(
+            1, 2,
+            f"Command Progress: {stats.progress_commands / stats.total_commands * 100}% ({stats.progress_commands}/{stats.total_commands}) "
+        )
+        window.box()
+        window.refresh()
 
     def update_warning_window(self, window, warnings):
         window.clear()
