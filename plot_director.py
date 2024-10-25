@@ -105,8 +105,8 @@ class Statistics:
 
 class GuiData:
     def __init__(self):
-        self.warnings = []
-        self.help_text = []
+        self.warnings = None
+        self.help_text = None
 
 
 class State:
@@ -114,8 +114,8 @@ class State:
 
     def __init__(self, nd):
         self.nd = nd
-        self.help_text = []
-        self.messages = []
+        self.help_text = None
+        self.messages = None
 
     def on_event(self, event):
         pass
@@ -135,11 +135,11 @@ class Initializing(State):
                 # give a heads up that in paused state
                 self.nd.moveto(5, 5)
                 self.nd.moveto(0, 0)
-                return States.PAUSED, []
+                return States.PAUSED, None
             else:
                 return States.FINISHED, [Initializing.PWR_WARNING]
         else:
-            return States.FINISHED, []
+            return States.FINISHED, None
 
     def init_plot(self, ):
         self.nd.interactive()
@@ -162,7 +162,7 @@ class Plotting(State):
         self.help_text = ["Pause: s"]
 
     def on_event(self, event):
-        self.messages = []
+        self.messages = None
         match event:
             case Events.S:
                 self.nd.moveto(0.0, 0.0)
@@ -183,7 +183,7 @@ class Plotting(State):
                 else:
                     self.nd.moveto(0.0, 0.0)
                     return States.FINISHED, ["Plot completed"]
-        return None, []
+        return None, None
 
     def process_definition(self, statements):
         for name, params in statements:
@@ -232,9 +232,9 @@ class Paused(State):
     def on_event(self, event):
         match event:
             case Events.P:
-                return States.PLOTTING, []
+                return States.PLOTTING, None
             case Events.Q:
-                return States.FINISHED, []
+                return States.FINISHED, None
             case Events.K:
                 # end interactive context
                 self.nd.penup()
@@ -243,9 +243,9 @@ class Paused(State):
                 self.nd.disconnect()
                 # begin plot context
                 self.nd.plot_setup()
-                return States.CALIBRATING, []
+                return States.CALIBRATING, None
         sleep(1)
-        return None, []
+        return None, None
 
 
 class Calibrating(State):
@@ -271,15 +271,15 @@ class Calibrating(State):
 
         if event in self.walk_commands:
             self.execute_walk(self.walk_commands[event])
-            return None, []
+            return None, None
         elif event == curses.KEY_F2:
             self.plot_alignment_svg()
-            return None, []
+            return None, None
         elif event == Events.C:
             self.reset_home_position()
-            return States.INITIALIZING, []
+            return States.INITIALIZING, None
         sleep(0.5)
-        return None, []
+        return None, None
 
     def execute_walk(self, cmd):
         utility_cmd, dist = cmd
@@ -316,9 +316,9 @@ class Finishing(State):
             self.nd.moveto(0.0, 0.0)
             self.nd.disconnect()
             notify("Plot completed", self.webhook)
-            return States.QUIT, []
+            return States.QUIT, None
         sleep(0.5)
-        return None, []
+        return None, None
 
 
 class Quit(State):
@@ -326,7 +326,7 @@ class Quit(State):
         super().__init__(nd)
 
     def on_event(self, event):
-        return None, []
+        return None, None
 
 
 class StateMachine:
@@ -346,6 +346,7 @@ class StateMachine:
         }
         self.state = self.states[States.INITIALIZING]
         self.messages = []
+        self.last_command = None
         self.new_messages = False
         self.stats = Statistics(self.commands)
 
@@ -470,9 +471,9 @@ class PlotDirector:
                 break
             if new_state != current_state:
                 current_state = new_state
-                cursor_location = self.update_state_window(state_win, current_state)
+                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__, current_state.help_text)
             elif self.resized_win:
-                cursor_location = self.update_state_window(state_win, current_state)
+                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__, current_state.help_text)
                 self.update_warning_window(warning_win, machine.messages)
                 self.resized_win = False
             if machine.new_messages:
@@ -535,17 +536,18 @@ class PlotDirector:
         progress_win.refresh()
         self.resized_win = True
 
-    def update_state_window(self, window, state):
+    def update_state_window(self, window, state_name, help_text):
         window.clear()
         window.addstr(
             1, 2,
-            f"Current State: {state}"
+            f"Current State: {state_name}"
         )
-        for i, option in enumerate(state.help_text):
-            window.addstr(
-                3 + i, 4,
-                option
-            )
+        if help_text:
+            for i, option in enumerate(help_text):
+                window.addstr(
+                    3 + i, 4,
+                    option
+                )
         y, x = window.getyx()
         window.addstr(y + 2, 2, '>>> ')
 
@@ -563,14 +565,26 @@ class PlotDirector:
         window.refresh()
 
     def update_warning_window(self, window, warnings):
+        if warnings:
+            window.clear()
+            for i, warning in enumerate(warnings):
+                window.addstr(
+                    1 + i, 4,
+                    warning
+                )
+            window.box()
+            window.refresh()
+
+    def update_progress_window(self, window, progress):
         window.clear()
-        for i, warning in enumerate(warnings):
+        for i, warning in enumerate(progress):
             window.addstr(
                 1 + i, 4,
                 warning
             )
         window.box()
         window.refresh()
+
 
 
 if __name__ == '__main__':
