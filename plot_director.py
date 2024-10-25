@@ -250,7 +250,7 @@ class Paused(State):
 
 class Calibrating(State):
     STEP_SIZE = 0.1
-    plot_commands = {
+    walk_commands = {
         curses.KEY_LEFT: ("walk_mmx", -STEP_SIZE),
         curses.KEY_RIGHT: ("walk_mmx", STEP_SIZE),
         curses.KEY_UP: ("walk_mmy", STEP_SIZE),
@@ -269,8 +269,8 @@ class Calibrating(State):
 
     def on_event(self, event):
 
-        if event in self.plot_commands:
-            self.execute_utility(self.plot_commands[event])
+        if event in self.walk_commands:
+            self.execute_walk(self.walk_commands[event])
             return None, []
         elif event == curses.KEY_F2:
             self.plot_alignment_svg()
@@ -281,7 +281,7 @@ class Calibrating(State):
         sleep(0.5)
         return None, []
 
-    def execute_utility(self, cmd):
+    def execute_walk(self, cmd):
         utility_cmd, dist = cmd
         self.nd.options.mode = "utility"
         self.nd.options.utility_cmd = utility_cmd
