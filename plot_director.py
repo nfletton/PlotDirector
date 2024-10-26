@@ -103,22 +103,13 @@ class Statistics:
             self.changed = False
 
 
-class GuiData:
-    def __init__(self):
-        self.warnings = None
-        self.help_text = None
-
-
 class State:
-    PWR_WARNING = "NextDraw power supply appears to be off."
-
     def __init__(self, nd):
         self.nd = nd
         self.help_text = None
-        self.messages = None
 
     def on_event(self, event):
-        pass
+        return None, None, None
 
     def __str__(self):
         return self.__class__.__name__
@@ -132,14 +123,9 @@ class Initializing(State):
     def on_event(self, event):
         if self.init_plot():
             if self.has_power():
-                # give a heads up that in paused state
-                self.nd.moveto(5, 5)
-                self.nd.moveto(0, 0)
-                return States.PAUSED, None
-            else:
-                return States.FINISHED, [Initializing.PWR_WARNING]
-        else:
-            return States.FINISHED, None
+                return States.PAUSED, "Ready to plot", None
+            return States.FINISHED, "NextDraw power supply appears to be off.", None
+        return States.FINISHED, "Failed to connect to NextDraw", None
 
     def init_plot(self, ):
         self.nd.interactive()
@@ -148,10 +134,10 @@ class Initializing(State):
         return self.nd.connect()
 
     def apply_option(self, name, value):
-        setattr(getattr(self.nd, 'options'), name, *value)
+        setattr(self.nd.options, name, *value)
 
     def has_power(self):
-        return True if int(self.nd.usb_query("QC\r").split(",")[1]) > 276 else False
+        return int(self.nd.usb_query("QC\r").split(",")[1]) > 276
 
 
 class Plotting(State):
@@ -162,13 +148,12 @@ class Plotting(State):
         self.help_text = ["Pause: s"]
 
     def on_event(self, event):
-        self.messages = None
         match event:
             case Events.S:
                 self.nd.moveto(0.0, 0.0)
-                return States.PAUSED, ["Manually paused"]
+                return States.PAUSED, "Manually paused", None
             case Events.DEFAULT:
-                if self.nd.connected and len(self.commands) > 0:
+                if self.nd.connected and self.commands:
                     name, params = self.commands.pop(0)
                     match name:
                         case "pause":
@@ -177,13 +162,14 @@ class Plotting(State):
                                 message = ' '.join(params)
                             else:
                                 message = "Paused in script"
-                            return States.PAUSED, [message]
+                            return States.PAUSED, message, "pause"
                         case _:
-                            self.process_statement(name, params)
+                            message = self.process_statement(name, params)
+                            return None, message, f"{name} {params if params else ''}"
                 else:
                     self.nd.moveto(0.0, 0.0)
-                    return States.FINISHED, ["Plot completed"]
-        return None, None
+                    return States.FINISHED, "Plot completed", None
+        return None, None, None
 
     def process_definition(self, statements):
         for name, params in statements:
@@ -194,14 +180,11 @@ class Plotting(State):
             self.process_definition(self.definitions[name])
             return
 
-        if name in API_OPTION_CASTS:
-            if hasattr(getattr(self.nd, "options"), name):
-                self.set_option(name, params)
-                self.nd.update()
+        if name in API_OPTION_CASTS and hasattr(self.nd.options, name):
+            return self.set_option(name, params)
         else:
             if hasattr(self.nd, name):
-                self.run_function(name, params)
-            # todo: add warning
+                return self.run_function(name, params)
 
     def run_function(self, name, params):
         try:
@@ -209,19 +192,20 @@ class Plotting(State):
             if callable(api_command):
                 api_command(*params)
             else:
-                self.messages.append(f"Attribute {name} exists in API but is not callable.")
+                return f"Attribute {name} exists in API but is not callable."
         except AttributeError as e:
-            self.messages.append(f"Error: {e} - {name} not found in {self.nd}.")
+            return f"Error: {e} - {name} not found in {self.nd}."
         except TypeError as e:
-            self.messages.append(f"TypeError executing command {name} with parameters {params}: {e}")
+            return f"TypeError executing command {name} with parameters {params}: {e}"
         except Exception as e:
-            self.messages.append(f"Unexpected error executing command {name} with parameters {params}: {e}")
+            return f"Unexpected error executing command {name} with parameters {params}: {e}"
 
     def set_option(self, name, params):
         try:
-            setattr(getattr(self.nd, 'options'), name, *params)
+            setattr(self.nd.options, name, *params)
+            self.nd.update()
         except Exception as e:
-            self.messages.append(f"Error setting option {name} with parameters {params}: {e}")
+            return f"Error setting option {name} with parameters {params}: {e}"
 
 
 class Paused(State):
@@ -232,9 +216,9 @@ class Paused(State):
     def on_event(self, event):
         match event:
             case Events.P:
-                return States.PLOTTING, None
+                return States.PLOTTING, "Plot started", None
             case Events.Q:
-                return States.FINISHED, None
+                return States.FINISHED, "Forced quit", None
             case Events.K:
                 # end interactive context
                 self.nd.penup()
@@ -243,43 +227,45 @@ class Paused(State):
                 self.nd.disconnect()
                 # begin plot context
                 self.nd.plot_setup()
-                return States.CALIBRATING, None
-        sleep(1)
-        return None, None
+                return States.CALIBRATING, "Calibrating", None
+        sleep(0.5)
+        return None, None, None
 
 
 class Calibrating(State):
     STEP_SIZE = 0.1
-    walk_commands = {
+    WALK_COMMANDS = {
         curses.KEY_LEFT: ("walk_mmx", -STEP_SIZE),
         curses.KEY_RIGHT: ("walk_mmx", STEP_SIZE),
         curses.KEY_UP: ("walk_mmy", STEP_SIZE),
         curses.KEY_DOWN: ("walk_mmy", -STEP_SIZE)
     }
+    HELP_TEXT = [
+        "Run offset test SVG: F2",
+        "Decrement x axis: Left",
+        "Increment x axis: Right",
+        "Increment y axis: Up",
+        "Decrement y axis: Down",
+        "Continue: c"
+    ]
 
     def __init__(self, nd, options):
         super().__init__(nd)
         self.options = options
-        self.help_text = ["Run offset test SVG: F2",
-                          "Decrement x axis: Left",
-                          "Increment x axis: Right",
-                          "Increment y axis: Up",
-                          "Decrement y axis: Down",
-                          "Continue: c"]
+        self.help_text = self.HELP_TEXT
 
     def on_event(self, event):
-
-        if event in self.walk_commands:
-            self.execute_walk(self.walk_commands[event])
-            return None, None
+        if event in self.WALK_COMMANDS:
+            self.execute_walk(self.WALK_COMMANDS[event])
+            return None, None, None
         elif event == curses.KEY_F2:
             self.plot_alignment_svg()
-            return None, None
+            return None, "Plotting alignment SVG", None
         elif event == Events.C:
             self.reset_home_position()
-            return States.INITIALIZING, None
+            return States.INITIALIZING, None, None
         sleep(0.5)
-        return None, None
+        return None, None, None
 
     def execute_walk(self, cmd):
         utility_cmd, dist = cmd
@@ -290,7 +276,6 @@ class Calibrating(State):
 
     def plot_alignment_svg(self):
         self.reset_home_position()
-
         self.nd.plot_setup(ALIGNMENT_SVG)
         self.nd.options.model = self.options['model'][0]
         self.nd.options.penlift = self.options['penlift'][0]
@@ -316,9 +301,9 @@ class Finishing(State):
             self.nd.moveto(0.0, 0.0)
             self.nd.disconnect()
             notify("Plot completed", self.webhook)
-            return States.QUIT, None
+            return States.QUIT, None, None
         sleep(0.5)
-        return None, None
+        return None, None, None
 
 
 class Quit(State):
@@ -326,7 +311,7 @@ class Quit(State):
         super().__init__(nd)
 
     def on_event(self, event):
-        return None, None
+        return None, None, None
 
 
 class StateMachine:
@@ -336,7 +321,15 @@ class StateMachine:
         self.options = self.extract_setup_options()
         self.definitions = self.extract_definitions()
         self.commands = self.extract_plot_commands()
-        self.states = {
+        self.states = self._initialize_states(webhook)
+        self.state = self.states[States.INITIALIZING]
+        self.messages = []
+        self.last_command = None
+        self.new_message = False
+        self.stats = Statistics(self.commands)
+
+    def _initialize_states(self, webhook):
+        return {
             States.PAUSED: Paused(self.nd),
             States.INITIALIZING: Initializing(self.nd, self.options),
             States.PLOTTING: Plotting(self.nd, self.definitions, self.commands),
@@ -344,19 +337,18 @@ class StateMachine:
             States.FINISHED: Finishing(self.nd, webhook),
             States.QUIT: Quit(self.nd),
         }
-        self.state = self.states[States.INITIALIZING]
-        self.messages = []
-        self.last_command = None
-        self.new_messages = False
-        self.stats = Statistics(self.commands)
 
     def on_event(self, event):
-        next_state, messages = self.state.on_event(event)
-        if messages:
-            self.messages.extend(messages)
-            self.new_messages = True
+        next_state, message, command = self.state.on_event(event)
+        if message:
+            self.messages.append(message)
+            self.new_message = True
         else:
-            self.new_messages = False
+            self.new_message = False
+        if command:
+            self.last_command = command
+        else:
+            self.last_command = None
         if next_state is not None:
             self.state = self.states[next_state]
         self.stats.update()
@@ -369,19 +361,18 @@ class StateMachine:
     def extract_setup_options(self):
         options = {}
         for statement in self.raw_plot_data:
-            if statement[0] != "::END_OPTIONS::":
-                name = statement[0]
-                options[name] = convert_params(API_OPTION_CASTS, name, statement[1:])
-            else:
+            if statement[0] == "::END_OPTIONS::":
                 self.raw_plot_data = self.raw_plot_data[len(options) + 1:]
                 break
+            else:
+                name = statement[0]
+                options[name] = convert_params(API_OPTION_CASTS, name, statement[1:])
         return options
 
     def breakdown_into_statements(self, body):
         statements = []
         name = None
         params = []
-
         for statement in body:
             if name is None:
                 name = statement
@@ -390,15 +381,12 @@ class StateMachine:
                 name, params = None, []
             else:
                 params.append(statement)
-
         if name is not None:
             statements.append((name, convert_params(API_FUNC_CASTS, name, params)))
-
         return statements
 
     def extract_definitions(self):
         definitions = {}
-
         for statement in self.raw_plot_data:
             name = statement[0]
             body = statement[1:]
@@ -407,18 +395,14 @@ class StateMachine:
                 break
             else:
                 definitions[name] = self.breakdown_into_statements(body)
-
         return definitions
 
     def extract_plot_commands(self):
         commands = []
-
         for statement in self.raw_plot_data:
             name = statement[0]
-
             if name == '#':
                 continue
-
             if len(statement) > 1:
                 if name in API_OPTION_CASTS:
                     casts = API_OPTION_CASTS
@@ -428,7 +412,6 @@ class StateMachine:
             else:
                 params = []
             commands.append((name, params))
-
         return commands
 
     def __str__(self):
@@ -444,14 +427,12 @@ class PlotDirector:
 
     def start(self, stdscr):
         stdscr.nodelay(True)
-
         state_win, stats_win, warning_win, progress_win = self.init_windows(stdscr)
         cursor_location = (0, 0)
-
         machine = StateMachine(self.filename, self.webhook)
-
         current_state = None
         new_state = machine.state
+        progress = []
         while True:
             key_press = stdscr.getch()
             if key_press > 0:
@@ -471,17 +452,23 @@ class PlotDirector:
                 break
             if new_state != current_state:
                 current_state = new_state
-                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__, current_state.help_text)
+                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__,
+                                                           current_state.help_text)
             elif self.resized_win:
-                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__, current_state.help_text)
+                cursor_location = self.update_state_window(state_win, current_state.__class__.__name__,
+                                                           current_state.help_text)
+                self.update_stats_window(stats_win, machine.stats)
                 self.update_warning_window(warning_win, machine.messages)
+                self.update_progress_window(progress_win, progress)
                 self.resized_win = False
-            if machine.new_messages:
+            if machine.new_message:
                 self.update_warning_window(warning_win, machine.messages)
             if machine.stats.changed:
                 self.update_stats_window(stats_win, machine.stats)
+            if machine.last_command:
+                progress.append(machine.last_command)
+                self.update_progress_window(progress_win, progress)
             stdscr.move(*cursor_location)
-            # stdscr.refresh()
 
     def init_windows(self, stdscr):
         state_win = curses.newwin(1, 1, 0, 0)
@@ -498,7 +485,7 @@ class PlotDirector:
     def resize_windows(self, stdscr, state_win, stats_win, warning_win, progress_win):
         y, x = stdscr.getmaxyx()
 
-        STATE_WIN_SIZE = 14
+        STATE_WIN_SIZE = 12
         STATS_WIN_SIZE = 6
         col_1_size = (y, int(x / 2))
         col_2_size = (y, x - col_1_size[1])
@@ -559,32 +546,41 @@ class PlotDirector:
         window.clear()
         window.addstr(
             1, 2,
-            f"Command Progress: {stats.progress_commands / stats.total_commands * 100}% ({stats.progress_commands}/{stats.total_commands}) "
+            f"Command Progress: {round(stats.progress_commands / stats.total_commands * 100, 1)}% ({stats.progress_commands}/{stats.total_commands}) "
         )
         window.box()
         window.refresh()
 
     def update_warning_window(self, window, warnings):
         if warnings:
+            y, x = window.getmaxyx()
+            y_space = y - 3
+            x_space = x - 6
+            if len(warnings) > y_space:
+                del warnings[:(len(warnings) - y_space)]
             window.clear()
             for i, warning in enumerate(warnings):
                 window.addstr(
-                    1 + i, 4,
-                    warning
+                    1 + i, 3,
+                    warning[:x_space]
                 )
             window.box()
             window.refresh()
 
     def update_progress_window(self, window, progress):
+        y, x = window.getmaxyx()
+        y_space = y - 3
+        x_space = x - 6
+        if len(progress) > y_space:
+            del progress[:(len(progress) - y_space)]
         window.clear()
-        for i, warning in enumerate(progress):
+        for i, command in enumerate(progress):
             window.addstr(
-                1 + i, 4,
-                warning
+                1 + i, 3,
+                command[:x_space]
             )
         window.box()
         window.refresh()
-
 
 
 if __name__ == '__main__':
