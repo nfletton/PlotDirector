@@ -241,7 +241,7 @@ class Calibrating(State):
         curses.KEY_DOWN: ("walk_mmy", -STEP_SIZE)
     }
     HELP_TEXT = [
-        "Run offset test SVG: F2",
+        "Plot offset test SVG: F2",
         "Decrement x axis: Left",
         "Increment x axis: Right",
         "Increment y axis: Up",
@@ -256,8 +256,9 @@ class Calibrating(State):
 
     def on_event(self, event):
         if event in self.WALK_COMMANDS:
-            self.execute_walk(self.WALK_COMMANDS[event])
-            return None, None, None
+            command = self.WALK_COMMANDS[event]
+            self.execute_walk(command)
+            return None, self.offset_message(command), None
         elif event == curses.KEY_F2:
             self.plot_alignment_svg()
             return None, "Plotting alignment SVG", None
@@ -288,6 +289,11 @@ class Calibrating(State):
         self.nd.plot_setup()
         self.nd.options.model = self.options['model'][0]
         self.nd.plot_run()
+
+    def offset_message(self, cmd):
+        utility_cmd, dist = cmd
+        return f"Offsetting home {utility_cmd[-1]} position by {dist}mm"
+
 
 
 class Finishing(State):
@@ -458,16 +464,16 @@ class PlotDirector:
                 cursor_location = self.update_state_window(state_win, current_state.__class__.__name__,
                                                            current_state.help_text)
                 self.update_stats_window(stats_win, machine.stats)
-                self.update_warning_window(warning_win, machine.messages)
-                self.update_progress_window(progress_win, progress)
+                self.update_message_window(warning_win, machine.messages)
+                self.update_message_window(progress_win, progress)
                 self.resized_win = False
             if machine.new_message:
-                self.update_warning_window(warning_win, machine.messages)
+                self.update_message_window(warning_win, machine.messages)
             if machine.stats.changed:
                 self.update_stats_window(stats_win, machine.stats)
             if machine.last_command:
                 progress.append(machine.last_command)
-                self.update_progress_window(progress_win, progress)
+                self.update_message_window(progress_win, progress)
             stdscr.move(*cursor_location)
 
     def init_windows(self, stdscr):
@@ -485,14 +491,14 @@ class PlotDirector:
     def resize_windows(self, stdscr, state_win, stats_win, warning_win, progress_win):
         y, x = stdscr.getmaxyx()
 
-        STATE_WIN_SIZE = 12
-        STATS_WIN_SIZE = 6
+        state_win_size = 12
+        stats_win_size = 6
         col_1_size = (y, int(x / 2))
         col_2_size = (y, x - col_1_size[1])
         col_1_pos = (0, 0)
         col_2_pos = (0, col_1_size[1])
-        win_1_size = (STATE_WIN_SIZE, col_1_size[1])
-        win_2_size = (STATS_WIN_SIZE, col_1_size[1])
+        win_1_size = (state_win_size, col_1_size[1])
+        win_2_size = (stats_win_size, col_1_size[1])
         win_3_size = (y - win_1_size[0] - win_2_size[0], col_1_size[1])
         win_4_size = (y, col_2_size[1])
         win_1_pos = (0, 0)
@@ -551,40 +557,29 @@ class PlotDirector:
         window.box()
         window.refresh()
 
-    def update_warning_window(self, window, warnings):
-        if warnings:
+    def update_message_window(self, window, messages):
+        if messages:
             y, x = window.getmaxyx()
             y_space = y - 3
             x_space = x - 6
-            if len(warnings) > y_space:
-                del warnings[:(len(warnings) - y_space)]
+            if len(messages) > y_space:
+                del messages[:(len(messages) - y_space)]
             window.clear()
-            for i, warning in enumerate(warnings):
+            for i, message in enumerate(messages):
                 window.addstr(
                     1 + i, 3,
-                    warning[:x_space]
+                    message[:x_space]
                 )
             window.box()
             window.refresh()
 
-    def update_progress_window(self, window, progress):
-        y, x = window.getmaxyx()
-        y_space = y - 3
-        x_space = x - 6
-        if len(progress) > y_space:
-            del progress[:(len(progress) - y_space)]
-        window.clear()
-        for i, command in enumerate(progress):
-            window.addstr(
-                1 + i, 3,
-                command[:x_space]
-            )
-        window.box()
-        window.refresh()
-
 
 if __name__ == '__main__':
-    command_file = sys.argv[1]
+    if len(sys.argv) == 1:
+        command_file = "default_plot_file.txt"
+    else:
+        command_file = sys.argv[1]
+
     if len(sys.argv) > 2:
         webhook_url = sys.argv[2]
     else:
@@ -595,4 +590,4 @@ if __name__ == '__main__':
         curses.wrapper(director.start)
     else:
         print(f"File '{command_file}' does not exist.")
-    quit()
+        exit(1)
