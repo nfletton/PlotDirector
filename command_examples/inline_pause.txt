@@ -7,6 +7,7 @@ accel 50
 speed_pendown 10
 speed_penup 35
 ::END_OPTIONS::
+go_home moveto 0 0
 ::END_DEFINITIONS::
 penup
 moveto 30.0 30.0
@@ -16,3 +17,4 @@ lineto 50 50
 pause
 moveto 50 50
 lineto 30 20
+go_home

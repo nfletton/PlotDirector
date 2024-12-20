@@ -150,14 +150,14 @@ class Plotting(State):
     def on_event(self, event):
         match event:
             case Events.S:
-                self.nd.moveto(0.0, 0.0)
+                self.process_statement("go_home", [])
                 return States.PAUSED, "Manually paused", None
             case Events.DEFAULT:
                 if self.nd.connected and self.commands:
                     name, params = self.commands.pop(0)
                     match name:
                         case "pause":
-                            self.nd.moveto(0.0, 0.0)
+                            self.process_statement("go_home", [])
                             if params:
                                 message = ' '.join(params)
                             else:
@@ -167,7 +167,7 @@ class Plotting(State):
                             message = self.process_statement(name, params)
                             return None, message, f"{name} {params if params else ''}"
                 else:
-                    self.nd.moveto(0.0, 0.0)
+                    self.process_statement("go_home", [])
                     return States.FINISHED, "Plot completed", None
         return None, None, None
 
@@ -304,7 +304,6 @@ class Finishing(State):
 
     def on_event(self, event):
         if event == LF:
-            self.nd.moveto(0.0, 0.0)
             self.nd.disconnect()
             notify("Plot completed", self.webhook)
             return States.QUIT, None, None

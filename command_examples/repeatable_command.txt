@@ -9,6 +9,8 @@ speed_penup 35
 ::END_OPTIONS::
 repeat_me_1 penup | moveto 20 20 | pendown | lineto 40 40 | draw_path [[50,50],[70,50],[70,70],[50,70],[50,50]] | moveto 0 0
 repeat_me_2 repeat_me_1
+go_home moveto 0 0
 ::END_DEFINITIONS::
 repeat_me_1
 repeat_me_2
+go_home

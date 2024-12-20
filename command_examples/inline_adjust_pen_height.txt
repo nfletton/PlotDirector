@@ -9,6 +9,7 @@ speed_penup 10
 pen_rate_lower 1
 pen_rate_raise 1
 ::END_OPTIONS::
+go_home moveto 0 0
 ::END_DEFINITIONS::
 penup
 pen_pos_up 67
@@ -26,3 +27,4 @@ penup
 pendown
 pen_pos_down 33
 penup
+go_home

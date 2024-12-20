@@ -7,6 +7,8 @@ accel 50
 speed_pendown 10
 speed_penup 35
 ::END_OPTIONS::
+go_home moveto 0 0
 ::END_DEFINITIONS::
 penup
 pendown
+go_home

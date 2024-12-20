@@ -7,6 +7,7 @@ accel 50
 speed_pendown 10
 speed_penup 35
 ::END_OPTIONS::
+go_home moveto 0 0
 ::END_DEFINITIONS::
 penup
 # Layer: base
@@ -215,4 +216,4 @@ draw_path [[71.548,157.349],[71.914,160.417]]
 draw_path [[218.367,117.971],[225.476,65.559],[217.279,64.448]]
 draw_path [[217.266,64.849],[225.026,65.902],[218.159,116.529]]
 draw_path [[206.868,69.651],[206.502,66.583]]
-moveto 0 0
+go_home 0 0

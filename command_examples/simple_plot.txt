@@ -7,9 +7,11 @@ accel 50
 speed_pendown 10
 speed_penup 35
 ::END_OPTIONS::
+go_home moveto 0 0
 ::END_DEFINITIONS::
 penup
 moveto 20 20
 pendown
 lineto 40 40
 draw_path [[50,50],[70,50],[70,70],[50,70],[50,50]]
+go_home
