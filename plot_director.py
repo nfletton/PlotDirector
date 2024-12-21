@@ -55,11 +55,11 @@ def notify(message, webhook):
         requests.post(f"{webhook}", data=message.encode(encoding='utf-8'))
 
 
-def convert_params(conversions, func_name, params):
-    if func_name in conversions:
-        return [func(params[i]) for i, func in enumerate(conversions[func_name])]
-    else:
-        return params
+def cast_api_params(conversions, func_name, params):
+    casts = conversions.get(func_name)
+    if casts:
+        return [cast(param) for cast, param in zip(casts, params)]
+    return params
 
 
 class States(Enum):
@@ -162,7 +162,7 @@ class Plotting(State):
                                 message = ' '.join(params)
                             else:
                                 message = "Paused in script"
-                            return States.PAUSED, message, "pause"
+                            return States.PAUSED, message, f"pause \"{message}\""
                         case _:
                             message = self.process_statement(name, params)
                             return None, message, f"{name} {params if params else ''}"
@@ -181,7 +181,8 @@ class Plotting(State):
             return
 
         if name in API_OPTION_CASTS and hasattr(self.nd.options, name):
-            return self.set_option(name, params)
+            cast_params = cast_api_params(API_OPTION_CASTS, name, params)
+            return self.set_option(name, cast_params)
         else:
             if hasattr(self.nd, name):
                 return self.run_function(name, params)
@@ -371,7 +372,7 @@ class StateMachine:
                 break
             else:
                 name = statement[0]
-                options[name] = convert_params(API_OPTION_CASTS, name, statement[1:])
+                options[name] = cast_api_params(API_OPTION_CASTS, name, statement[1:])
         return options
 
     def breakdown_into_statements(self, body):
@@ -382,12 +383,12 @@ class StateMachine:
             if name is None:
                 name = statement
             elif statement == STATEMENT_SEPARATOR:
-                statements.append((name, convert_params(API_FUNC_CASTS, name, params)))
+                statements.append((name, cast_api_params(API_FUNC_CASTS, name, params)))
                 name, params = None, []
             else:
                 params.append(statement)
         if name is not None:
-            statements.append((name, convert_params(API_FUNC_CASTS, name, params)))
+            statements.append((name, cast_api_params(API_FUNC_CASTS, name, params)))
         return statements
 
     def extract_definitions(self):
@@ -413,7 +414,7 @@ class StateMachine:
                     casts = API_OPTION_CASTS
                 else:
                     casts = API_FUNC_CASTS
-                params = convert_params(casts, name, statement[1:])
+                params = cast_api_params(casts, name, statement[1:])
             else:
                 params = []
             commands.append((name, params))
