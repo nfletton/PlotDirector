@@ -1,4 +1,4 @@
-rootProject.name = "PlotDirector"
+rootProject.name = "PlotDirectorClient"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
