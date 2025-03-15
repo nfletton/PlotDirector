@@ -1,1 +1,4 @@
 https://software-download.bantamtools.com/nd/api/nextdraw_api.zip
+grpcio
+grpcio-tools
+requests

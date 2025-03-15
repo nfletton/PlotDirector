@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package plot;
+
+// The plotting service definition
+service PlotService {
+  // Initialize NextDraw with configuration options
+  rpc InitializePlot (InitializePlotRequest) returns (CommandResponse) {}
+
+  // Process a command for the NextDraw machine
+  rpc ProcessCommand (CommandRequest) returns (CommandResponse) {}
+
+  // Disconnect from NextDraw
+  rpc Disconnect (DisconnectRequest) returns (CommandResponse) {}
+
+  // Check if NextDraw has power
+  rpc HasPower (HasPowerRequest) returns (HasPowerResponse) {}
+
+  // Plot the alignment SVG
+  rpc PlotAlignmentSVG (PlotAlignmentSVGRequest) returns (CommandResponse) {}
+
+  // Walk the home position in x or y axis
+  rpc WalkHome (WalkHomeRequest) returns (CommandResponse) {}
+
+  // Reset the home position
+  rpc ResetHomePosition (ResetHomePositionRequest) returns (CommandResponse) {}
+}
+
+// Empty request message for Disconnect
+message DisconnectRequest {
+}
+
+// Empty request message for HasPower
+message HasPowerRequest {
+}
+
+// Response message containing power status
+message HasPowerResponse {
+  bool has_power = 1;
+}
+
+// The request message containing the command
+message CommandRequest {
+  string command = 1;
+}
+
+// The response message containing the result
+message CommandResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// The request message for initializing plot
+message InitializePlotRequest {
+  repeated string options = 1;
+  repeated string definitions = 2;
+}
+
+// Empty request message for PlotAlignmentSVG
+message PlotAlignmentSVGRequest {
+}
+
+// Request message for walking home position
+message WalkHomeRequest {
+  string axis = 1;  // 'x' or 'y'
+  float distance = 2;  // distance in mm
+}
+
+// Empty request message for resetting home position
+message ResetHomePositionRequest {
+}
