@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.HorizontalScrollbar
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -100,14 +102,16 @@ fun LogWidget(
             Box(
                 modifier = Modifier.fillMaxSize().padding(top = 8.dp)
             ) {
-                val scrollState = rememberScrollState()
+                val verticalScrollState = rememberScrollState()
+                val horizontalScrollState = rememberScrollState()
 
                 OutlinedTextField(
                     value = content,
                     onValueChange = { },
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState),
+                        .horizontalScroll(horizontalScrollState)
+                        .verticalScroll(verticalScrollState),
                     readOnly = true,
                     maxLines = Int.MAX_VALUE,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -118,7 +122,12 @@ fun LogWidget(
 
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd),
-                    adapter = rememberScrollbarAdapter(scrollState)
+                    adapter = rememberScrollbarAdapter(verticalScrollState)
+                )
+
+                HorizontalScrollbar(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    adapter = rememberScrollbarAdapter(horizontalScrollState)
                 )
             }
         }
