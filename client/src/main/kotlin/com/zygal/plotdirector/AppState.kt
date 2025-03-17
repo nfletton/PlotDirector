@@ -8,7 +8,7 @@ import java.io.FilenameFilter
 import java.util.logging.Logger
 
 const val AXIS_STEP: Double = 0.1
-const val COMMAND_LOG_SIZE: Int = 10
+const val COMMAND_LOG_SIZE: Int = 200
 
 open class AppState(private val window: ComposeWindow?) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)

@@ -2,6 +2,10 @@ package com.zygal.plotdirector
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -92,17 +96,31 @@ fun LogWidget(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-            OutlinedTextField(
-                value = content,
-                onValueChange = { },
-                modifier = Modifier.fillMaxSize().padding(top = 8.dp),
-                readOnly = true,
-                maxLines = Int.MAX_VALUE,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                textStyle = MaterialTheme.typography.bodySmall,
-            )
+
+            Box(
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp)
+            ) {
+                val scrollState = rememberScrollState()
+
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState),
+                    readOnly = true,
+                    maxLines = Int.MAX_VALUE,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                )
+
+                VerticalScrollbar(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    adapter = rememberScrollbarAdapter(scrollState)
+                )
+            }
         }
     }
 }
