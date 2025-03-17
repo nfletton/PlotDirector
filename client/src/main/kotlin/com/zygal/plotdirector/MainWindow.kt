@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,6 +99,13 @@ fun LogWidget(
             ) {
                 val verticalScrollState = rememberScrollState()
                 val horizontalScrollState = rememberScrollState()
+
+                // Auto-scroll to bottom when content changes
+                LaunchedEffect(content) {
+                    if (content.isNotEmpty()) {
+                        verticalScrollState.animateScrollTo(verticalScrollState.maxValue)
+                    }
+                }
 
                 TextField(
                     value = content,
