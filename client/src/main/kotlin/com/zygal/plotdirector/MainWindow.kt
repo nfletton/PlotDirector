@@ -1,13 +1,7 @@
 package com.zygal.plotdirector
 
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.VerticalScrollbar
-import androidx.compose.foundation.HorizontalScrollbar
-import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -100,12 +94,12 @@ fun LogWidget(
             }
 
             Box(
-                modifier = Modifier.fillMaxSize().padding(top = 8.dp)
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 val verticalScrollState = rememberScrollState()
                 val horizontalScrollState = rememberScrollState()
 
-                OutlinedTextField(
+                TextField(
                     value = content,
                     onValueChange = { },
                     modifier = Modifier
@@ -114,9 +108,7 @@ fun LogWidget(
                         .verticalScroll(verticalScrollState),
                     readOnly = true,
                     maxLines = Int.MAX_VALUE,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    ),
+                    colors = TextFieldDefaults.colors(),
                     textStyle = MaterialTheme.typography.bodySmall,
                 )
 
