@@ -27,17 +27,15 @@ fun MainWindow(viewModel: AppState) {
         ) {
             // Left logging widget
             LogWidget(
-                title = "Left Log",
-                content = viewModel.leftLogContent,
-                onClear = { viewModel.clearLeftLog() },
+                title = "Messages",
+                content = viewModel.messagesLogContent,
                 modifier = Modifier.fillMaxHeight().weight(1f)
             )
 
             // Right logging widget
             LogWidget(
-                title = "Right Log",
-                content = viewModel.rightLogContent,
-                onClear = { viewModel.clearRightLog() },
+                title = "Command Log",
+                content = viewModel.commandLogContent,
                 modifier = Modifier.fillMaxHeight().weight(1f)
             )
         }
@@ -74,7 +72,6 @@ fun ButtonBar(
 fun LogWidget(
     title: String,
     content: String,
-    onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -92,11 +89,8 @@ fun LogWidget(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium
                 )
-                FilledTonalButton(onClick = onClear) {
-                    Text("Clear")
-                }
             }
             OutlinedTextField(
                 value = content,
@@ -106,7 +100,8 @@ fun LogWidget(
                 maxLines = Int.MAX_VALUE,
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
+                ),
+                textStyle = MaterialTheme.typography.bodySmall,
             )
         }
     }

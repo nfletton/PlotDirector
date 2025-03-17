@@ -1,7 +1,5 @@
 package com.zygal.plotdirector
 
-import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import java.io.File
 
 
@@ -19,10 +17,10 @@ enum class PlotSection {
     OPTIONS, DEFINITIONS, COMMANDS
 }
 
-class PlotData(val plotFilePath: String) {
+class PlotData(private val plotFilePath: String) {
 
-    val options: List<String>
-    val definitions: List<String>
+    private val options: List<String>
+    private val definitions: List<String>
     private var commands: MutableList<String>
 
     init {
@@ -33,7 +31,8 @@ class PlotData(val plotFilePath: String) {
     }
 
     fun nextCommand(): String? {
-        return commands.removeFirst().takeIf { it.isNotEmpty() }
+        val command = commands.removeFirst().takeIf { it.isNotEmpty() }
+        return command
     }
 
     private fun loadFile(): Triple<List<String>, List<String>, List<String>> {
@@ -65,4 +64,5 @@ class PlotData(val plotFilePath: String) {
         return Triple(options, definitions, commands)
     }
 
+    fun hasCommands() = commands.isNotEmpty()
 }
