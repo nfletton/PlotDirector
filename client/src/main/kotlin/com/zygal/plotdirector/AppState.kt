@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import java.awt.FileDialog
 import java.io.FilenameFilter
 import java.util.logging.Logger
+import kotlin.math.roundToInt
 
 const val AXIS_STEP: Double = 0.1
 const val COMMAND_LOG_SIZE: Int = 200
@@ -21,8 +22,15 @@ open class AppState(private val window: ComposeWindow?) {
 
     private val commandLog = mutableListOf<String>()
     private val messageLog = mutableListOf<String>()
+    private var stats = Stats(0)
 
     data class ButtonAction(val button: Buttons, val label: String, val onClick: () -> Unit)
+
+    private data class Stats(val commandCount: Int) {
+        var progressCount: Int = 0
+
+        fun completedPercentage() = ((progressCount * 1.0 / commandCount) * 100).toInt()
+    }
 
     enum class States(val label: String) {
         IDLE("Idle"),
@@ -113,7 +121,11 @@ open class AppState(private val window: ComposeWindow?) {
     }
 
     private fun updateStatus() {
-        statusContent = "Status: ${plotState.label}"
+        var content = "Status: ${plotState.label}"
+        if (stats.commandCount > 0) {
+            content += "\nProgress: ${stats.completedPercentage()} % (${stats.progressCount}/${stats.commandCount})"
+        }
+        statusContent = content
     }
 
     private fun updateButtons() {
@@ -125,9 +137,10 @@ open class AppState(private val window: ComposeWindow?) {
             filenameFilter = FilenameFilter { _, name -> name.endsWith(".txt") }
             isVisible = true
             file?.let { fileName ->
-                title = "Plot File: $fileName, Status: $plotState"
                 plotFile = directory + fileName
                 loadPlot()
+                stats = Stats(plotData?.commandCount ?: 0)
+                logger.info("Plot file loaded: $plotFile")
             }
         }
     }
@@ -166,6 +179,8 @@ open class AppState(private val window: ComposeWindow?) {
             }
 
             localPlotData.nextCommand()?.let { command ->
+                stats.progressCount++
+                updateStatus()
                 updateCommandLog(command)
             }
             delay(50)
@@ -201,7 +216,9 @@ open class AppState(private val window: ComposeWindow?) {
         plotJob?.cancel()
         plotData = null
         plotFile = ""
-        // todo: clear log windows
+        stats = Stats(0)
+        updateCommandLog("")
+        updateStatus()
         nextState(States.IDLE)
         logger.info("Plot data cleared")
     }
@@ -212,10 +229,12 @@ open class AppState(private val window: ComposeWindow?) {
     }
 
     private fun updateCommandLog(command: String) {
-        if (command.isEmpty()) return
+        if (command.isEmpty()) {
+            commandLogContent = ""
+            return
+        }
         commandLog.add(command)
         if (commandLog.size > COMMAND_LOG_SIZE) commandLog.removeFirst()
         commandLogContent = commandLog.joinToString("\n")
     }
-
 }

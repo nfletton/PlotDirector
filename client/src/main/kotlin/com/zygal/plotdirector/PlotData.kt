@@ -19,6 +19,7 @@ enum class PlotSection {
 
 class PlotData(private val plotFilePath: String) {
 
+    val commandCount: Int
     private val options: List<String>
     private val definitions: List<String>
     private var commands: MutableList<String>
@@ -28,6 +29,7 @@ class PlotData(private val plotFilePath: String) {
         options = opt
         definitions = def
         commands = cmd.toMutableList()
+        commandCount = commands.size
     }
 
     fun nextCommand(): String? {
