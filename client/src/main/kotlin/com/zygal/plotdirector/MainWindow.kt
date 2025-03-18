@@ -26,12 +26,25 @@ fun MainWindow(viewModel: AppState) {
             modifier = Modifier.fillMaxSize().weight(1f).padding(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Left logging widget
-            LogWidget(
-                title = "Messages",
-                content = viewModel.messagesLogContent,
-                modifier = Modifier.fillMaxHeight().weight(1f)
-            )
+            // Left column with status and messages
+            Column(
+                modifier = Modifier.fillMaxHeight().weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Status widget
+                StatusWidget(
+                    title = "Status",
+                    content = viewModel.statusContent,
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                )
+
+                // Left logging widget (half height at bottom)
+                LogWidget(
+                    title = "Messages",
+                    content = viewModel.messagesLogContent,
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                )
+            }
 
             // Right logging widget
             LogWidget(
@@ -70,6 +83,48 @@ fun ButtonBar(
 }
 
 @Composable
+fun StatusWidget(
+    title: String,
+    content: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+
+            Box(
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                TextField(
+                    value = content,
+                    onValueChange = { },
+                    modifier = Modifier.fillMaxSize(),
+                    readOnly = true,
+                    maxLines = Int.MAX_VALUE,
+                    colors = TextFieldDefaults.colors(),
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun LogWidget(
     title: String,
     content: String,
@@ -90,7 +145,7 @@ fun LogWidget(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
 

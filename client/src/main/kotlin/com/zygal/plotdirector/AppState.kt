@@ -99,6 +99,9 @@ open class AppState(private val window: ComposeWindow?) {
     var commandLogContent by mutableStateOf("")
         private set
 
+    var statusContent by mutableStateOf("Status: ${plotState.label}")
+        private set
+
     var activeButtons by mutableStateOf(getActiveButtons(plotState))
         private set
 
@@ -106,6 +109,11 @@ open class AppState(private val window: ComposeWindow?) {
     private fun nextState(nextState: States) {
         plotState = nextState
         updateButtons()
+        updateStatus()
+    }
+
+    private fun updateStatus() {
+        statusContent = "Status: ${plotState.label}"
     }
 
     private fun updateButtons() {
