@@ -5,7 +5,7 @@ import warnings
 
 from . import plot_service_pb2 as plot__service__pb2
 
-GRPC_GENERATED_VERSION = '1.70.0'
+GRPC_GENERATED_VERSION = '1.71.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -70,6 +70,11 @@ class PlotServiceStub(object):
                 request_serializer=plot__service__pb2.ResetHomePositionRequest.SerializeToString,
                 response_deserializer=plot__service__pb2.CommandResponse.FromString,
                 _registered_method=True)
+        self.RestoreInteractiveContext = channel.unary_unary(
+                '/plot.PlotService/RestoreInteractiveContext',
+                request_serializer=plot__service__pb2.RestoreInteractiveContextRequest.SerializeToString,
+                response_deserializer=plot__service__pb2.CommandResponse.FromString,
+                _registered_method=True)
 
 
 class PlotServiceServicer(object):
@@ -125,6 +130,13 @@ class PlotServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RestoreInteractiveContext(self, request, context):
+        """Restore interactive context
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PlotServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -161,6 +173,11 @@ def add_PlotServiceServicer_to_server(servicer, server):
             'ResetHomePosition': grpc.unary_unary_rpc_method_handler(
                     servicer.ResetHomePosition,
                     request_deserializer=plot__service__pb2.ResetHomePositionRequest.FromString,
+                    response_serializer=plot__service__pb2.CommandResponse.SerializeToString,
+            ),
+            'RestoreInteractiveContext': grpc.unary_unary_rpc_method_handler(
+                    servicer.RestoreInteractiveContext,
+                    request_deserializer=plot__service__pb2.RestoreInteractiveContextRequest.FromString,
                     response_serializer=plot__service__pb2.CommandResponse.SerializeToString,
             ),
     }
@@ -353,6 +370,33 @@ class PlotService(object):
             target,
             '/plot.PlotService/ResetHomePosition',
             plot__service__pb2.ResetHomePositionRequest.SerializeToString,
+            plot__service__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RestoreInteractiveContext(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/plot.PlotService/RestoreInteractiveContext',
+            plot__service__pb2.RestoreInteractiveContextRequest.SerializeToString,
             plot__service__pb2.CommandResponse.FromString,
             options,
             channel_credentials,

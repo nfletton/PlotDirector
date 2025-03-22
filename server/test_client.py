@@ -121,6 +121,16 @@ def run():
             logging.error(f"Error resetting home position: {str(e)}")
             return
 
+        # Test restoring interactive context
+        try:
+            response = stub.RestoreInteractiveContext(plot_service_pb2.RestoreInteractiveContextRequest())
+            logging.info("Restoring interactive context")
+            logging.info(f"Response: {response.message}")
+            logging.info(f"Success: {response.success}\n")
+        except Exception as e:
+            logging.error(f"Error restoring interactive context: {str(e)}")
+            return
+
         # Disconnect from NextDraw
         try:
             response = stub.Disconnect(plot_service_pb2.DisconnectRequest())

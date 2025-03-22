@@ -48,11 +48,13 @@ STATEMENT_SEPARATOR = "|"
 
 ALIGNMENT_SVG = '<svg width="74mm" height="105mm" viewBox="0 0 74 105" xmlns="http://www.w3.org/2000/svg"><circle style="fill:none;stroke:#000;stroke-width:.2;stroke-dasharray:none" cx="37" cy="40.975" r="24.57"/><path style="fill:none;stroke:#000;stroke-width:.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" d="M7.577 40.975h58.846M37 11.551v58.847"/></svg>'
 
+
 def cast_api_params(conversions, func_name, params):
     casts = conversions.get(func_name)
     if casts:
         return [cast(param) for cast, param in zip(casts, params)]
     return params
+
 
 def breakdown_into_statements(body):
     """Break down a sequence of tokens into named statements with parameters.
@@ -77,6 +79,7 @@ def breakdown_into_statements(body):
     if name is not None:
         statements.append((name, cast_api_params(API_FUNC_CASTS, name, params)))
     return statements
+
 
 def extract_definitions(raw_definitions):
     """Extract raw string definitions into name/body dictionary.
@@ -125,7 +128,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
 
         for option in parts:
             name = option[0]
-            if name in API_OPTION_CASTS and hasattr(self.nd.options, name):
+            if name in API_OPTION_CASTS:
                 options[name] = cast_api_params(API_OPTION_CASTS, name, option[1:])
             else:
                 logging.warning('Attempt to set invalid option %s with value(s) %s' % (name, option[1:]))
@@ -143,13 +146,22 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
 
         if options:
             self.default_options = self.extract_options(options)
-            for name, params in self.default_options.items():
-                setattr(self.nd.options, name, *params)
 
         if definitions:
             # Process command definitions
             self.definitions = extract_definitions(definitions)
 
+        self.setup_interactive_context()
+
+        return self.nd.connect()
+
+    def setup_interactive_context(self):
+        self.nd.interactive()
+        for name, value in self.default_options.items():
+            if hasattr(self.nd.options, name):
+                setattr(self.nd.options, name, *value)
+            else:
+                logging.warning(f"Option {name} not found in NextDraw options")
         return self.nd.connect()
 
     def HasPower(self, request, context):
@@ -197,7 +209,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             if self.nd is None:
                 return plot_service_pb2.CommandResponse(
                     success=False,
-                    message="NextDraw is not initialized. Call initialize_next_draw first."
+                    message="NextDraw is not initialized. Call InitializePlot first."
                 )
 
             # Configure and plot the alignment SVG
@@ -228,7 +240,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             if self.nd is None:
                 return plot_service_pb2.CommandResponse(
                     success=False,
-                    message="NextDraw is not initialized. Call initialize_next_draw first."
+                    message="NextDraw is not initialized. Call InitializePlot first."
                 )
 
             # Validate axis parameter
@@ -271,7 +283,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             if self.nd is None:
                 return plot_service_pb2.CommandResponse(
                     success=False,
-                    message="NextDraw is not initialized. Call initialize_next_draw first."
+                    message="NextDraw is not initialized. Call InitializePlot first."
                 )
 
             # Reset home position
@@ -291,12 +303,34 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                 message=f"Failed to reset home position: {str(e)}"
             )
 
+    def RestoreInteractiveContext(self, request, context):
+        """RPC method to restore the interactive context."""
+        try:
+            if self.nd is None:
+                return plot_service_pb2.CommandResponse(
+                    success=False,
+                    message="NextDraw is not initialized. Call InitializePlot first."
+                )
+
+            # Restore interactive context
+            self.setup_interactive_context()
+
+            return plot_service_pb2.CommandResponse(
+                success=True,
+                message="Successfully restored interactive context"
+            )
+        except Exception as e:
+            return plot_service_pb2.CommandResponse(
+                success=False,
+                message=f"Failed to restore interactive context: {str(e)}"
+            )
+
     def ProcessCommand(self, request, context):
         try:
             if self.nd is None:
                 return plot_service_pb2.CommandResponse(
                     success=False,
-                    message="NextDraw is not initialized. Call initialize_next_draw first."
+                    message="NextDraw is not initialized. Call InitializePlot first."
                 )
 
             # Parse command and parameters
@@ -353,6 +387,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                 message=f"Error processing command: {str(e)}"
             )
 
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     plot_service_pb2_grpc.add_PlotServiceServicer_to_server(
@@ -362,6 +397,7 @@ def serve():
     server.start()
     logging.info("Server started on port 50051")
     server.wait_for_termination()
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

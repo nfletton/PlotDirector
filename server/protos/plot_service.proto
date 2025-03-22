@@ -24,6 +24,9 @@ service PlotService {
 
   // Reset the home position
   rpc ResetHomePosition (ResetHomePositionRequest) returns (CommandResponse) {}
+
+  // Restore interactive context
+  rpc RestoreInteractiveContext (RestoreInteractiveContextRequest) returns (CommandResponse) {}
 }
 
 // Empty request message for Disconnect
@@ -68,4 +71,8 @@ message WalkHomeRequest {
 
 // Empty request message for resetting home position
 message ResetHomePositionRequest {
+}
+
+// Empty request message for restoring interactive context
+message RestoreInteractiveContextRequest {
 }
