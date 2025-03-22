@@ -255,13 +255,14 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             if distance < -MAX_STEP_SIZE or distance > MAX_STEP_SIZE:
                 return plot_service_pb2.CommandResponse(
                     success=False,
-                    message="Invalid distance of %s. Must be in range [-%s, %s]." % (distance, MAX_STEP_SIZE, MAX_STEP_SIZE)
+                    message=f"Invalid distance of {distance}. Must be in range plus or minus {MAX_STEP_SIZE}mm."
                 )
 
             # Prepare utility command based on axis
-            utility_cmd = 'walk_mm%s' % request.axis
+            utility_cmd = f"walk_mm{request.axis}"
 
             # Set up and execute the walk command
+            self.nd.plot_setup()
             self.nd.options.mode = "utility"
             self.nd.options.utility_cmd = utility_cmd
             self.nd.options.dist = distance
@@ -269,7 +270,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
 
             return plot_service_pb2.CommandResponse(
                 success=True,
-                message=f"Successfully walked home position {request.axis} axis by {distance}mm"
+                message=f"Walked {request.axis} axis by {distance}mm"
             )
         except Exception as e:
             return plot_service_pb2.CommandResponse(
