@@ -133,7 +133,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             else:
                 logging.warning('Attempt to set invalid option %s with value(s) %s' % (name, option[1:]))
         # force millimeter units
-        options['units'] = 2
+        options['units'] = [2]
         return options
 
     def initialize_plot(self, options=None, definitions=None):
@@ -143,9 +143,6 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             options (list[str], optional): List of options to set on NextDraw before connecting.
             definitions (list[str], optional): List of command definitions to process.
         """
-        self.nd = NextDraw()
-        self.nd.interactive()
-
         if options:
             self.default_options = self.extract_options(options)
 
@@ -153,9 +150,8 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             # Process command definitions
             self.definitions = extract_definitions(definitions)
 
-        self.setup_interactive_context()
-
-        return self.nd.connect()
+        self.nd = NextDraw()
+        return self.setup_interactive_context()
 
     def setup_interactive_context(self):
         self.nd.interactive()
