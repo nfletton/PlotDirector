@@ -102,7 +102,7 @@ def extract_definitions(raw_definitions):
 class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
     def __init__(self):
         self.nd = None
-        self.default_options = {}
+        self.base_options = {}
         self.definitions = {}
 
     def InitializePlot(self, request, context):
@@ -133,7 +133,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             else:
                 logging.warning('Attempt to set invalid option %s with value(s) %s' % (name, option[1:]))
         # force millimeter units
-        options['units'] = [2]
+        # options['units'] = [2]
         return options
 
     def initialize_plot(self, options=None, definitions=None):
@@ -144,7 +144,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             definitions (list[str], optional): List of command definitions to process.
         """
         if options:
-            self.default_options = self.extract_options(options)
+            self.base_options = self.extract_options(options)
 
         if definitions:
             # Process command definitions
@@ -155,7 +155,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
 
     def setup_interactive_context(self):
         self.nd.interactive()
-        for name, value in self.default_options.items():
+        for name, value in self.base_options.items():
             if hasattr(self.nd.options, name):
                 setattr(self.nd.options, name, *value)
             else:
@@ -213,11 +213,11 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             # Configure and plot the alignment SVG
             self.nd.plot_setup(ALIGNMENT_SVG)
 
-            # Set required options if they exist in default_options
+            # Set required options if they exist in base_options
             required_options = ['model', 'penlift', 'pen_pos_up', 'pen_pos_down']
             for option in required_options:
-                if option in self.default_options:
-                    setattr(self.nd.options, option, *self.default_options[option])
+                if option in self.base_options:
+                    setattr(self.nd.options, option, *self.base_options[option])
 
             self.nd.plot_run()
 
@@ -288,8 +288,8 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             # Reset home position
             self.nd.options.mode = "plot"
             self.nd.plot_setup()
-            if 'model' in self.default_options:
-                self.nd.options.model = self.default_options['model'][0]
+            if 'model' in self.base_options:
+                self.nd.options.model = self.base_options['model'][0]
             self.nd.plot_run()
 
             return plot_service_pb2.CommandResponse(
