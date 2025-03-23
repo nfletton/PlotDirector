@@ -132,6 +132,8 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                 options[name] = cast_api_params(API_OPTION_CASTS, name, option[1:])
             else:
                 logging.warning('Attempt to set invalid option %s with value(s) %s' % (name, option[1:]))
+        # force millimeter units
+        options['units'] = 2
         return options
 
     def initialize_plot(self, options=None, definitions=None):
