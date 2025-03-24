@@ -11,12 +11,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MainWindow(viewModel: AppState) {
+fun MainWindow(appState: AppState) {
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Top button bar
             ButtonBar(
-                buttons = viewModel.activeButtons,
+                buttons = appState.activeButtons,
                 modifier = Modifier.fillMaxWidth()
                     .background(Color.White)
             )
@@ -34,14 +34,14 @@ fun MainWindow(viewModel: AppState) {
                 // Status widget
                 StatusWidget(
                     title = "Status",
-                    content = viewModel.statusContent,
+                    content = appState.statusContent,
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 )
 
                 // Left logging widget (half height at bottom)
                 LogWidget(
                     title = "Messages",
-                    content = viewModel.messagesLogContent,
+                    content = appState.messageLogContent,
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 )
             }
@@ -49,7 +49,7 @@ fun MainWindow(viewModel: AppState) {
             // Right logging widget
             LogWidget(
                 title = "Command Log",
-                content = viewModel.commandLogContent,
+                content = appState.commandLogContent,
                 modifier = Modifier.fillMaxHeight().weight(1f)
             )
         }

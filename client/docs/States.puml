@@ -1,0 +1,22 @@
+@startuml
+'https://plantuml.com/state-diagram
+
+'scale 700 width
+
+[*] --> Idle
+Idle --> [*] : exit
+Idle --> Ready : load
+Ready --> Plotting : plot
+Ready --> Idle : quit
+Ready --> Calibrating : calibrate
+Plotting --> Paused : pause
+Paused --> Plotting : plot
+Paused --> Calibrating: calibrate
+Paused --> Idle : quit
+Plotting --> Finished : eof
+Finished --> Idle : quit
+Calibrating --> Ready : continue
+Calibrating --> Calibrating : svg
+Calibrating --> Calibrating : '+-walk'
+Ready : file loaded\nNextDraw initialized
+@enduml

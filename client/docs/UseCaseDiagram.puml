@@ -1,0 +1,23 @@
+@startuml
+'https://plantuml.com/use-case-diagram
+
+actor "User" as User
+
+rectangle Director {
+    "Load Plot\nFile" as (load)
+    "Plot" as (plot)
+    "Calibrate" as (calibrate)
+    "Plot Alignment\nSVG" as (svg)
+    (load) <|-- (plot)
+    (load) <|-- (Pause)
+    (load) <|-- (Quit)
+    (calibrate) <|-- (+x)
+    (calibrate) <|-- (-x)
+    (calibrate) <|-- (+y)
+    (calibrate) <|-- (-y)
+    (calibrate) <|-- (svg)
+}
+
+User --> (calibrate)
+User --> (load)
+@enduml

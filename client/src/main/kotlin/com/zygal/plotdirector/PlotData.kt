@@ -3,16 +3,6 @@ package com.zygal.plotdirector
 import java.io.File
 
 
-//private var channel: ManagedChannel
-//init {
-//    channel = ManagedChannelBuilder
-//        .forAddress("localhost", 50051)
-//        .usePlaintext()
-//        .build()
-//    logger.info("Channel created")
-//}
-
-
 enum class PlotSection {
     OPTIONS, DEFINITIONS, COMMANDS
 }
@@ -20,8 +10,8 @@ enum class PlotSection {
 class PlotData(private val plotFilePath: String) {
 
     val commandCount: Int
-    private val options: List<String>
-    private val definitions: List<String>
+    val options: List<String>
+    val definitions: List<String>
     private var commands: MutableList<String>
 
     init {
