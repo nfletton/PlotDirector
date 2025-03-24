@@ -131,6 +131,16 @@ def run():
             logging.error(f"Error restoring interactive context: {str(e)}")
             return
 
+        # Test ending interactive context
+        try:
+            response = stub.EndInteractiveContext(plot_service_pb2.EndInteractiveContextRequest())
+            logging.info("Ending interactive context")
+            logging.info(f"Response: {response.message}")
+            logging.info(f"Success: {response.success}\n")
+        except Exception as e:
+            logging.error(f"Error ending interactive context: {str(e)}")
+            return
+
         # Disconnect from NextDraw
         try:
             response = stub.Disconnect(plot_service_pb2.DisconnectRequest())

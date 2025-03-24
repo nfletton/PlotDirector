@@ -75,6 +75,11 @@ class PlotServiceStub(object):
                 request_serializer=plot__service__pb2.RestoreInteractiveContextRequest.SerializeToString,
                 response_deserializer=plot__service__pb2.CommandResponse.FromString,
                 _registered_method=True)
+        self.EndInteractiveContext = channel.unary_unary(
+                '/plot.PlotService/EndInteractiveContext',
+                request_serializer=plot__service__pb2.EndInteractiveContextRequest.SerializeToString,
+                response_deserializer=plot__service__pb2.CommandResponse.FromString,
+                _registered_method=True)
 
 
 class PlotServiceServicer(object):
@@ -137,6 +142,13 @@ class PlotServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def EndInteractiveContext(self, request, context):
+        """End interactive context
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PlotServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -178,6 +190,11 @@ def add_PlotServiceServicer_to_server(servicer, server):
             'RestoreInteractiveContext': grpc.unary_unary_rpc_method_handler(
                     servicer.RestoreInteractiveContext,
                     request_deserializer=plot__service__pb2.RestoreInteractiveContextRequest.FromString,
+                    response_serializer=plot__service__pb2.CommandResponse.SerializeToString,
+            ),
+            'EndInteractiveContext': grpc.unary_unary_rpc_method_handler(
+                    servicer.EndInteractiveContext,
+                    request_deserializer=plot__service__pb2.EndInteractiveContextRequest.FromString,
                     response_serializer=plot__service__pb2.CommandResponse.SerializeToString,
             ),
     }
@@ -397,6 +414,33 @@ class PlotService(object):
             target,
             '/plot.PlotService/RestoreInteractiveContext',
             plot__service__pb2.RestoreInteractiveContextRequest.SerializeToString,
+            plot__service__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EndInteractiveContext(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/plot.PlotService/EndInteractiveContext',
+            plot__service__pb2.EndInteractiveContextRequest.SerializeToString,
             plot__service__pb2.CommandResponse.FromString,
             options,
             channel_credentials,

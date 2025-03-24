@@ -27,6 +27,9 @@ service PlotService {
 
   // Restore interactive context
   rpc RestoreInteractiveContext (RestoreInteractiveContextRequest) returns (CommandResponse) {}
+
+  // End interactive context
+  rpc EndInteractiveContext (EndInteractiveContextRequest) returns (CommandResponse) {}
 }
 
 // Empty request message for Disconnect
@@ -75,4 +78,8 @@ message ResetHomePositionRequest {
 
 // Empty request message for restoring interactive context
 message RestoreInteractiveContextRequest {
+}
+
+// Empty request message for ending interactive context
+message EndInteractiveContextRequest {
 }

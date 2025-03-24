@@ -324,6 +324,32 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                 message=f"Failed to restore interactive context: {str(e)}"
             )
 
+    def EndInteractiveContext(self, request, context):
+        """RPC method to end the interactive context."""
+        try:
+            if self.nd is None:
+                return plot_service_pb2.CommandResponse(
+                    success=False,
+                    message="NextDraw is not initialized. Call InitializePlot first."
+                )
+
+            self.nd.penup()
+            self.nd.moveto(0, 0)
+            self.nd.block()
+            self.nd.disconnect()
+            # begin plot context
+            self.nd.plot_setup()
+
+            return plot_service_pb2.CommandResponse(
+                success=True,
+                message="Successfully ended interactive context"
+            )
+        except Exception as e:
+            return plot_service_pb2.CommandResponse(
+                success=False,
+                message=f"Failed to end interactive context: {str(e)}"
+            )
+
     def ProcessCommand(self, request, context):
         try:
             if self.nd is None:
