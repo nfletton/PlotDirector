@@ -133,7 +133,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             else:
                 logging.warning('Attempt to set invalid option %s with value(s) %s' % (name, option[1:]))
         # force millimeter units
-        # options['units'] = [2]
+        options['units'] = [2]
         return options
 
     def initialize_plot(self, options=None, definitions=None):
@@ -189,7 +189,7 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                     message="NextDraw is not initialized, nothing to disconnect."
                 )
 
-            self.nd.disconnect()
+            if self.nd.connected: self.nd.disconnect()
             self.nd = None
             return plot_service_pb2.CommandResponse(
                 success=True,
@@ -213,12 +213,9 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             # Configure and plot the alignment SVG
             self.nd.plot_setup(ALIGNMENT_SVG)
 
-            # Set required options if they exist in base_options
-            required_options = ['model', 'penlift', 'pen_pos_up', 'pen_pos_down']
-            for option in required_options:
-                if option in self.base_options:
+            for option in self.base_options:
+                if option not in ["units"]:
                     setattr(self.nd.options, option, *self.base_options[option])
-
             self.nd.plot_run()
 
             return plot_service_pb2.CommandResponse(
@@ -260,7 +257,6 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
             utility_cmd = f"walk_mm{request.axis}"
 
             # Set up and execute the walk command
-            self.nd.plot_setup()
             self.nd.options.mode = "utility"
             self.nd.options.utility_cmd = utility_cmd
             self.nd.options.dist = distance
