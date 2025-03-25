@@ -1,11 +1,12 @@
 [versions]
-protobuf = "4.29.3"   #
+protobuf = "4.30.1"   #
 grpc = "1.71.0" #
 grpc-kotlin = "1.4.1" #
 protobuf-plugin = "0.9.4"
 compose-multiplatform = "1.8.0-beta01"
 kotlin = "2.1.20"
 kotlinx-coroutines = "1.10.1"
+versions-plugin = "0.52.0"
 
 [libraries]
 grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf", version.ref = "grpc" }
@@ -26,3 +27,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
 protobuf-java = { id = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
 protobuf-kotlin = { id = "io.grpc:protoc-gen-grpc-kotlin", version.ref = "grpc-kotlin" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versions-plugin"}
