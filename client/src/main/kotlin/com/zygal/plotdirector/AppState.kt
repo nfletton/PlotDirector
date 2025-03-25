@@ -198,12 +198,12 @@ open class AppState(private val window: ComposeWindow?) {
                     .addAllDefinitions(data.definitions).build()
 
             val response = stub.initializePlot(initRequest)
-            updateMessageLog(response.message)
+            logMessage(response.message)
 
             checkNextDrawPower()
 
             if (!response.success) {
-                logRequestResponse("Error initializing plot", "ERROR")
+                logStatusMessage("Error initializing plot")
                 clearPlot()
                 return false
             }
@@ -220,7 +220,7 @@ open class AppState(private val window: ComposeWindow?) {
         val stub = getStub() ?: return
         try {
             val response = stub.hasPower(PlotServiceOuterClass.HasPowerRequest.newBuilder().build())
-            if (!response.hasPower) logRequestResponse("Check power to NextDraw", "WARNING")
+            if (!response.hasPower) logStatusMessage("Check power to NextDraw", "WARNING")
         } catch (e: Exception) {
             logException("Check NextDraw power", e)
         }
@@ -232,7 +232,7 @@ open class AppState(private val window: ComposeWindow?) {
             val response = stub.endInteractiveContext(
                 PlotServiceOuterClass.EndInteractiveContextRequest.newBuilder().build()
             )
-            if (!response.success) logRequestResponse(response.message)
+            if (!response.success) logStatusMessage(response.message)
             nextState(States.CALIBRATING)
         } catch (e: Exception) {
             logException("Switch to calibration mode", e)
@@ -258,7 +258,7 @@ open class AppState(private val window: ComposeWindow?) {
             return
         }
         val stub = getStub() ?: run {
-            updateMessageLog("ERROR: Unable to connect to plotting service")
+            logStatusMessage("Unable to connect to plotting service")
             clearPlot()
             return
         }
@@ -273,7 +273,7 @@ open class AppState(private val window: ComposeWindow?) {
                 when (commandName) {
                     "pause" -> {
                         nextState(States.PAUSED)
-                        updateMessageLog(command)
+                        logMessage(command)
                     }
 
                     else -> {
@@ -281,10 +281,10 @@ open class AppState(private val window: ComposeWindow?) {
                             val commandRequest = PlotServiceOuterClass.CommandRequest.newBuilder()
                                 .setCommand(command).build()
                             val response = stub.processCommand(commandRequest)
-                            if (!response.success) logRequestResponse(response.message)
+                            if (!response.success) logStatusMessage(response.message)
                             stats.progressCount++
                             updateStatus()
-                            updateCommandLog(command)
+                            logCommand(command)
                         } catch (e: Exception) {
                             logException("Process command '$command'", e)
                         }
@@ -305,8 +305,8 @@ open class AppState(private val window: ComposeWindow?) {
                     .setDistance(distance).build()
 
             val response = stub.walkHome(walkHomeRequest)
-            if (response.success) updateMessageLog(response.message)
-            else logRequestResponse(response.message)
+            if (response.success) logMessage(response.message)
+            else logStatusMessage(response.message)
         } catch (e: Exception) {
             logException("Walk carriage in ${axis.label} axis", e)
         }
@@ -319,8 +319,8 @@ open class AppState(private val window: ComposeWindow?) {
             val response = stub.plotAlignmentSVG(
                 PlotServiceOuterClass.PlotAlignmentSVGRequest.newBuilder().build()
             )
-            if (response.success) updateMessageLog(response.message)
-            else logRequestResponse(response.message)
+            if (response.success) logMessage(response.message)
+            else logStatusMessage(response.message)
         } catch (e: Exception) {
             logException("Plot alignment SVG", e)
         }
@@ -332,8 +332,8 @@ open class AppState(private val window: ComposeWindow?) {
             val response = stub.resetHomePosition(
                 PlotServiceOuterClass.ResetHomePositionRequest.newBuilder().build()
             )
-            if (response.success) updateMessageLog(response.message)
-            else logRequestResponse(response.message)
+            if (response.success) logMessage(response.message)
+            else logStatusMessage(response.message)
         } catch (e: Exception) {
             logException("Reset home position", e)
         }
@@ -347,7 +347,7 @@ open class AppState(private val window: ComposeWindow?) {
             val response = stub.restoreInteractiveContext(
                 PlotServiceOuterClass.RestoreInteractiveContextRequest.newBuilder().build()
             )
-            if (!response.success) logRequestResponse(response.message)
+            if (!response.success) logStatusMessage(response.message)
             nextState(States.READY)
         } catch (e: Exception) {
             logException("Restore interactive context", e)
@@ -365,14 +365,14 @@ open class AppState(private val window: ComposeWindow?) {
             try {
                 val response =
                     stub.disconnect(PlotServiceOuterClass.DisconnectRequest.newBuilder().build())
-                if (response.success) updateMessageLog(response.message)
-                else logRequestResponse(response.message)
+                if (response.success) logMessage(response.message)
+                else logStatusMessage(response.message)
             } catch (e: Exception) {
                 logException("Disconnect plot", e)
             }
         }
 
-        updateCommandLog("")
+        logCommand("")
         nextState(States.IDLE)
         logger.info { "Plot data cleared" }
     }
@@ -392,7 +392,7 @@ open class AppState(private val window: ComposeWindow?) {
         logger.info { "Stopped application" }
     }
 
-    private fun updateCommandLog(command: String) {
+    private fun logCommand(command: String) {
         if (command.isEmpty()) {
             commandLogContent = ""
             return
@@ -402,13 +402,13 @@ open class AppState(private val window: ComposeWindow?) {
         commandLogContent = commandLog.joinToString("\n")
     }
 
-    private fun logRequestResponse(message: String, type: String = "ERROR") {
-        val errorMessage = "${type}: $message"
+    private fun logStatusMessage(message: String, status: String = "ERROR") {
+        val errorMessage = "${status}: $message"
         logger.error { errorMessage }
-        updateMessageLog(errorMessage)
+        logMessage(errorMessage)
     }
 
-    private fun updateMessageLog(message: String) {
+    private fun logMessage(message: String) {
         if (message.isEmpty()) {
             messageLogContent = ""
             return
