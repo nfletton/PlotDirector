@@ -90,7 +90,7 @@ open class AppState(private val window: ComposeWindow?) {
     }
 
     private val buttonActions = listOf(
-        ButtonAction(Buttons.LOAD_PLOT, "Load Plot File") { openPlotFile() },
+        ButtonAction(Buttons.LOAD_PLOT, "Load Plot File") { loadPlotFile() },
         ButtonAction(Buttons.PLOT, "Plot") { startPlot() },
         ButtonAction(Buttons.QUIT, "Quit") { clearPlot() },
         ButtonAction(Buttons.CALIBRATE, "Calibrate") { switchToCalibrationMode() },
@@ -162,7 +162,7 @@ open class AppState(private val window: ComposeWindow?) {
         activeButtons = getActiveButtons(plotState)
     }
 
-    private fun openPlotFile() {
+    private fun loadPlotFile() {
         FileDialog(window, "Choose a plot file", FileDialog.LOAD).apply {
             filenameFilter = FilenameFilter { _, name -> name.endsWith(".txt") }
             isVisible = true
@@ -184,7 +184,6 @@ open class AppState(private val window: ComposeWindow?) {
         initializeChannel()
         if (initializeNextDraw()) {
             nextState(States.READY)
-            logger.info { "Plot data loaded. NextDraw Initialized." }
         }
     }
 
