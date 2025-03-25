@@ -13,20 +13,20 @@ import com.zygal.plotdirector.ui.theme.PlotDirectorTheme
 fun main() = application {
     val windowState = remember { mutableStateOf<ComposeWindow?>(null) }
 
-    val viewModel = remember { AppState(windowState.value) }
+    val appState = remember { AppState(windowState.value) }
 
     Window(
         onCloseRequest = {
-            viewModel.cleanUp()
+            appState.cleanUp()
             exitApplication()
-                         },
-        title = viewModel.title
+        },
+        title = appState.title
     ) {
         windowState.value = this.window
 
         PlotDirectorTheme {
             Column(modifier = Modifier.fillMaxSize()) {
-                MainWindow(viewModel)
+                MainWindow(appState)
             }
         }
     }

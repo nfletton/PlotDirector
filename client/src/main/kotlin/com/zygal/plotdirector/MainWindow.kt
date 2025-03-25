@@ -15,11 +15,10 @@ fun MainWindow(appState: AppState) {
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Top button bar
-            ButtonBar(
-                buttons = appState.activeButtons,
-                modifier = Modifier.fillMaxWidth()
-                    .background(Color.White)
-            )
+        ButtonBar(
+            buttons = appState.activeButtons,
+            modifier = Modifier.fillMaxWidth().background(Color.White)
+        )
 
         // Split view for logging widgets
         Row(
@@ -57,23 +56,16 @@ fun MainWindow(appState: AppState) {
 }
 
 @Composable
-fun ButtonBar(
-    buttons: List<AppState.ButtonAction>,
-    modifier: Modifier = Modifier
-) {
+fun ButtonBar(buttons: List<AppState.ButtonAction>, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 4.dp
+        modifier = modifier, color = MaterialTheme.colorScheme.surfaceVariant, tonalElevation = 4.dp
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             buttons.forEach { buttonAction ->
                 Button(
-                    onClick = buttonAction.onClick,
-                    colors = ButtonDefaults.buttonColors()
+                    onClick = buttonAction.onClick, colors = ButtonDefaults.buttonColors()
                 ) {
                     Text(buttonAction.label)
                 }
@@ -83,15 +75,9 @@ fun ButtonBar(
 }
 
 @Composable
-fun StatusWidget(
-    title: String,
-    content: String,
-    modifier: Modifier = Modifier
-) {
+fun StatusWidget(title: String, content: String, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+        modifier = modifier, color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(8.dp)
@@ -102,13 +88,13 @@ fun StatusWidget(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall
+                    text = title, style = MaterialTheme.typography.titleSmall
                 )
             }
 
             Box(
-                modifier = Modifier.fillMaxSize().padding(top = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline)
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 TextField(
                     value = content,
@@ -125,15 +111,9 @@ fun StatusWidget(
 }
 
 @Composable
-fun LogWidget(
-    title: String,
-    content: String,
-    modifier: Modifier = Modifier
-) {
+fun LogWidget(title: String, content: String, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+        modifier = modifier, color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(8.dp)
@@ -144,13 +124,13 @@ fun LogWidget(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall
+                    text = title, style = MaterialTheme.typography.titleSmall
                 )
             }
 
             Box(
-                modifier = Modifier.fillMaxSize().padding(top = 8.dp).border(1.dp, MaterialTheme.colorScheme.outline)
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 val verticalScrollState = rememberScrollState()
                 val horizontalScrollState = rememberScrollState()
@@ -165,9 +145,7 @@ fun LogWidget(
                 TextField(
                     value = content,
                     onValueChange = { },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .horizontalScroll(horizontalScrollState)
+                    modifier = Modifier.fillMaxSize().horizontalScroll(horizontalScrollState)
                         .verticalScroll(verticalScrollState),
                     readOnly = true,
                     maxLines = Int.MAX_VALUE,
