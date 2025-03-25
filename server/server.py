@@ -160,7 +160,13 @@ class PlotService(plot_service_pb2_grpc.PlotServiceServicer):
                 setattr(self.nd.options, name, *value)
             else:
                 logging.warning(f"Option {name} not found in NextDraw options")
-        return self.nd.connect()
+        if self.nd.connect():
+            self.nd.penup()
+            self.nd.moveto(0, 0)
+            self.nd.block()
+            return True
+        else:
+            return False
 
     def HasPower(self, request, context):
         """RPC method to check if NextDraw has power."""

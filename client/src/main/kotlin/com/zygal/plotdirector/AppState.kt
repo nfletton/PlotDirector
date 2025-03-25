@@ -100,7 +100,7 @@ open class AppState(private val window: ComposeWindow?) {
         ButtonAction(Buttons.PLUS_Y_AXIS, "+y") { walkCarriage(Axis.Y, AXIS_STEP) },
         ButtonAction(Buttons.MINUS_Y_AXIS, "-y") { walkCarriage(Axis.Y, -AXIS_STEP) },
         ButtonAction(Buttons.PLOT_ALIGN_SVG, "Alignment Plot") { plotAlignmentSvg() },
-        ButtonAction(Buttons.PAUSE, "Pause") { nextState(States.PAUSED) },
+        ButtonAction(Buttons.PAUSE, "Pause") { pausePlot() },
     )
 
     private val stateButtonMapping = mapOf(
@@ -248,11 +248,11 @@ open class AppState(private val window: ComposeWindow?) {
 
     private fun initiatePlot(viewModel: AppState) {
         plotJob = scope.launch {
-            viewModel.processData()
+            viewModel.processCommands()
         }
     }
 
-    private suspend fun processData() {
+    private suspend fun processCommands() {
         val localPlotData = plotData ?: run {
             clearPlot()
             return
@@ -275,7 +275,9 @@ open class AppState(private val window: ComposeWindow?) {
                         nextState(States.PAUSED)
                         logMessage(command)
                     }
-
+                    "#" -> {
+                        logCommand(command)
+                    }
                     else -> {
                         try {
                             val commandRequest = PlotServiceOuterClass.CommandRequest.newBuilder()
@@ -352,6 +354,11 @@ open class AppState(private val window: ComposeWindow?) {
         } catch (e: Exception) {
             logException("Restore interactive context", e)
         }
+    }
+
+    private fun pausePlot() {
+        logMessage("Plot manually paused")
+        nextState(States.PAUSED)
     }
 
     private fun clearPlot() {
