@@ -28,6 +28,8 @@ dependencies {
     implementation(libs.protobuf.kotlin)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.swing)
+    implementation(libs.kotlin.logging)
+    implementation(libs.slf4j.simple)
 
     testImplementation(libs.kotlin.test)
 }

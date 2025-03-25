@@ -11,7 +11,8 @@ import plot.PlotServiceGrpc
 import plot.PlotServiceOuterClass
 import java.awt.FileDialog
 import java.io.FilenameFilter
-import java.util.logging.Logger
+import io.github.oshai.kotlinlogging.KotlinLogging
+
 
 const val AXIS_STEP: Float = 0.1f
 const val COMMAND_LOG_SIZE: Int = 200
@@ -19,7 +20,7 @@ const val MESSAGE_LOG_SIZE: Int = 30
 
 open class AppState(private val window: ComposeWindow?) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val logger = Logger.getLogger("Main")
+    private val logger = KotlinLogging.logger {}
 
     private var plotState by mutableStateOf(States.IDLE)
     private var plotFile = ""
@@ -29,6 +30,28 @@ open class AppState(private val window: ComposeWindow?) {
 
     private val commandLog = mutableListOf<String>()
     private val messageLog = mutableListOf<String>()
+
+    private fun getStub(): PlotServiceGrpc.PlotServiceBlockingStub? {
+        return plotChannel?.let { channel ->
+            PlotServiceGrpc.newBlockingStub(channel)
+        }
+    }
+
+    private fun logException(operation: String, e: Exception) {
+        val errorMessage = when (e) {
+            is StatusRuntimeException -> {
+                when (e.status.code) {
+                    Status.Code.INTERNAL -> "ERROR: Check NextDraw USB connection"
+                    Status.Code.UNAVAILABLE -> "ERROR: Check Plot Director Server running"
+                    else -> "ERROR: $operation failed"
+                }
+            }
+
+            else -> "ERROR: $operation failed"
+        }
+        logger.error(e) { errorMessage }
+    }
+
     private var stats = Stats(0)
 
     data class ButtonAction(val button: Buttons, val label: String, val onClick: () -> Unit)
@@ -74,12 +97,9 @@ open class AppState(private val window: ComposeWindow?) {
         ButtonAction(Buttons.CONTINUE, "Continue") { continuePlotting() },
         ButtonAction(Buttons.PLUS_X_AXIS, "+x") { walkCarriage(Axis.X, AXIS_STEP) },
         ButtonAction(Buttons.MINUS_X_AXIS, "-x") { walkCarriage(Axis.X, -AXIS_STEP) },
-        ButtonAction(Buttons.PLUS_Y_AXIS, "+y") { walkCarriage(Axis.Y, AXIS_STEP)},
+        ButtonAction(Buttons.PLUS_Y_AXIS, "+y") { walkCarriage(Axis.Y, AXIS_STEP) },
         ButtonAction(Buttons.MINUS_Y_AXIS, "-y") { walkCarriage(Axis.Y, -AXIS_STEP) },
-        ButtonAction(
-            Buttons.PLOT_ALIGN_SVG,
-            "Alignment Plot"
-        ) { plotAlignmentSvg() },
+        ButtonAction(Buttons.PLOT_ALIGN_SVG, "Alignment Plot") { plotAlignmentSvg() },
         ButtonAction(Buttons.PAUSE, "Pause") { nextState(States.PAUSED) },
     )
 
@@ -121,10 +141,7 @@ open class AppState(private val window: ComposeWindow?) {
         private set
 
     private fun initializeChannel() {
-        plotChannel = ManagedChannelBuilder
-            .forAddress("localhost", 50051)
-            .usePlaintext()
-            .build()
+        plotChannel = ManagedChannelBuilder.forAddress("localhost", 50051).usePlaintext().build()
     }
 
     private fun nextState(nextState: States) {
@@ -153,7 +170,7 @@ open class AppState(private val window: ComposeWindow?) {
                 plotFile = directory + fileName
                 loadPlot()
                 stats = Stats(plotData?.commandCount ?: 0)
-                logger.info("Plot file loaded: $plotFile")
+                logger.info { "Plot file loaded: $plotFile" }
             }
         }
     }
@@ -167,69 +184,60 @@ open class AppState(private val window: ComposeWindow?) {
         initializeChannel()
         if (initializeNextDraw()) {
             nextState(States.READY)
-            logger.info("Plot data loaded. NextDraw Initialized.")
+            logger.info { "Plot data loaded. NextDraw Initialized." }
         }
     }
 
     private fun initializeNextDraw(): Boolean {
-        plotData?.let { data ->
-            plotChannel?.let { channel ->
+        val data = plotData ?: return false
+        val stub = getStub() ?: return false
 
-                try {
-                    val stub = PlotServiceGrpc.newBlockingStub(channel)
-                    val initRequest = PlotServiceOuterClass.InitializePlotRequest.newBuilder()
-                        .addAllOptions(data.options)
-                        .addAllDefinitions(data.definitions)
-                        .build()
+        try {
+            val initRequest =
+                PlotServiceOuterClass.InitializePlotRequest.newBuilder().addAllOptions(data.options)
+                    .addAllDefinitions(data.definitions).build()
 
-                    val response = stub.initializePlot(initRequest)
-                    updateMessageLog(response.message)
+            val response = stub.initializePlot(initRequest)
+            updateMessageLog(response.message)
 
-                    checkNextDrawPower()
+            checkNextDrawPower()
 
-                    if (!response.success) {
-                        logger.severe("Error initializing plot: ${response.message}")
-                        clearPlot()
-                        return false
-                    }
-
-                    logger.info("NextDraw Initialized")
-                    return true
-                } catch (e: StatusRuntimeException) {
-                    logger.severe("Error initializing plot: ${e.message}")
-                    val errorMessage = when (e.status.code) {
-                        Status.Code.INTERNAL -> "ERROR: Check NextDraw USB connection"
-                        Status.Code.UNAVAILABLE -> "ERROR: Check Plot Director Server running"
-                        else -> "ERROR: ${e.message}"
-                    }
-                    updateMessageLog(errorMessage)
-                    clearPlot()
-                    return false
-                }
+            if (!response.success) {
+                logRequestResponse("Error initializing plot", "ERROR")
+                clearPlot()
+                return false
             }
+
+            return true
+        } catch (e: Exception) {
+            logException("Initialize plot", e)
+            clearPlot()
+            return false
         }
-        return false
     }
 
     private fun checkNextDrawPower() {
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel!!)
-        val response = stub.hasPower(PlotServiceOuterClass.HasPowerRequest.newBuilder().build())
-        if (!response.hasPower) {
-            updateMessageLog("WARNING: Check power to NextDraw")
+        val stub = getStub() ?: return
+        try {
+            val response = stub.hasPower(PlotServiceOuterClass.HasPowerRequest.newBuilder().build())
+            if (!response.hasPower) logRequestResponse("Check power to NextDraw", "WARNING")
+        } catch (e: Exception) {
+            logException("Check NextDraw power", e)
         }
     }
 
     private fun switchToCalibrationMode() {
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel!!)
-        val response = stub.endInteractiveContext(PlotServiceOuterClass.EndInteractiveContextRequest.newBuilder().build())
-        if (!response.success) {
-            logger.severe("Error ending interactive context: ${response.message}")
-            updateMessageLog("ERROR: ${response.message}")
+        val stub = getStub() ?: return
+        try {
+            val response = stub.endInteractiveContext(
+                PlotServiceOuterClass.EndInteractiveContextRequest.newBuilder().build()
+            )
+            if (!response.success) logRequestResponse(response.message)
+            nextState(States.CALIBRATING)
+        } catch (e: Exception) {
+            logException("Switch to calibration mode", e)
         }
-        nextState(States.CALIBRATING)
-        logger.info("Switched to calibration mode")
-   }
-
+    }
 
     private fun startPlot() {
         nextState(States.PLOTTING)
@@ -249,7 +257,11 @@ open class AppState(private val window: ComposeWindow?) {
             clearPlot()
             return
         }
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
+        val stub = getStub() ?: run {
+            updateMessageLog("ERROR: Unable to connect to plotting service")
+            clearPlot()
+            return
+        }
 
         while (localPlotData.hasCommands()) {
             while (plotState != States.PLOTTING) {
@@ -267,18 +279,14 @@ open class AppState(private val window: ComposeWindow?) {
                     else -> {
                         try {
                             val commandRequest = PlotServiceOuterClass.CommandRequest.newBuilder()
-                                .setCommand(command)
-                                .build()
-                            val commandResponse = stub.processCommand(commandRequest)
-                            if (!commandResponse.success) {
-                                logger.severe("Error processing command '$command'")
-                            }
+                                .setCommand(command).build()
+                            val response = stub.processCommand(commandRequest)
+                            if (!response.success) logRequestResponse(response.message)
                             stats.progressCount++
                             updateStatus()
                             updateCommandLog(command)
-                            logger.info("Command: $command -> Response: ${commandResponse.message}")
                         } catch (e: Exception) {
-                            logger.severe("Error processing command '$command': ${e.message}")
+                            logException("Process command '$command'", e)
                         }
                     }
                 }
@@ -290,43 +298,60 @@ open class AppState(private val window: ComposeWindow?) {
     }
 
     private fun walkCarriage(axis: Axis, distance: Float) {
+        val stub = getStub() ?: return
         try {
-            val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
+            val walkHomeRequest =
+                PlotServiceOuterClass.WalkHomeRequest.newBuilder().setAxis(axis.label)
+                    .setDistance(distance).build()
 
-            val walkHomeRequest = PlotServiceOuterClass.WalkHomeRequest.newBuilder()
-                .setAxis(axis.label)
-                .setDistance(distance)
-                .build()
-
-            val walkHomeResponse = stub.walkHome(walkHomeRequest)
-            updateMessageLog(walkHomeResponse.message)
+            val response = stub.walkHome(walkHomeRequest)
+            if (response.success) updateMessageLog(response.message)
+            else logRequestResponse(response.message)
         } catch (e: Exception) {
-            logger.severe("Error walking home position in ${axis.label} axis: ${e.message}")
+            logException("Walk carriage in ${axis.label} axis", e)
         }
     }
 
     private fun plotAlignmentSvg() {
         resetHomePosition()
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
-        stub.plotAlignmentSVG(PlotServiceOuterClass.PlotAlignmentSVGRequest.newBuilder().build())
-        logger.info("Plotted alignment SVG")
+        val stub = getStub() ?: return
+        try {
+            val response = stub.plotAlignmentSVG(
+                PlotServiceOuterClass.PlotAlignmentSVGRequest.newBuilder().build()
+            )
+            if (response.success) updateMessageLog(response.message)
+            else logRequestResponse(response.message)
+        } catch (e: Exception) {
+            logException("Plot alignment SVG", e)
+        }
     }
 
     private fun resetHomePosition() {
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
-        val resetHomeResponse = stub.resetHomePosition(PlotServiceOuterClass.ResetHomePositionRequest.newBuilder().build())
-        if (!resetHomeResponse.success) {
-            logger.severe("Error resetting home position: ${resetHomeResponse.message}")
+        val stub = getStub() ?: return
+        try {
+            val response = stub.resetHomePosition(
+                PlotServiceOuterClass.ResetHomePositionRequest.newBuilder().build()
+            )
+            if (response.success) updateMessageLog(response.message)
+            else logRequestResponse(response.message)
+        } catch (e: Exception) {
+            logException("Reset home position", e)
         }
-        logger.info("Home position reset")
     }
 
     private fun continuePlotting() {
         resetHomePosition()
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
-        stub.restoreInteractiveContext(PlotServiceOuterClass.RestoreInteractiveContextRequest.newBuilder().build())
 
-        nextState(States.READY)
+        val stub = getStub() ?: return
+        try {
+            val response = stub.restoreInteractiveContext(
+                PlotServiceOuterClass.RestoreInteractiveContextRequest.newBuilder().build()
+            )
+            if (!response.success) logRequestResponse(response.message)
+            nextState(States.READY)
+        } catch (e: Exception) {
+            logException("Restore interactive context", e)
+        }
     }
 
     private fun clearPlot() {
@@ -334,18 +359,37 @@ open class AppState(private val window: ComposeWindow?) {
         plotData = null
         plotFile = ""
         stats = Stats(0)
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
-        stub.disconnect(PlotServiceOuterClass.DisconnectRequest.newBuilder().build())
+
+        val stub = getStub()
+        if (stub != null) {
+            try {
+                val response =
+                    stub.disconnect(PlotServiceOuterClass.DisconnectRequest.newBuilder().build())
+                if (response.success) updateMessageLog(response.message)
+                else logRequestResponse(response.message)
+            } catch (e: Exception) {
+                logException("Disconnect plot", e)
+            }
+        }
+
         updateCommandLog("")
         nextState(States.IDLE)
-        logger.info("Plot data cleared")
+        logger.info { "Plot data cleared" }
     }
 
     fun cleanUp() {
         scope.cancel()
-        val stub = PlotServiceGrpc.newBlockingStub(plotChannel)
-        stub.disconnect(PlotServiceOuterClass.DisconnectRequest.newBuilder().build())
-        logger.info("Stopped application")
+
+        val stub = getStub()
+        if (stub != null) {
+            try {
+                stub.disconnect(PlotServiceOuterClass.DisconnectRequest.newBuilder().build())
+            } catch (e: Exception) {
+                logException("Cleanup", e)
+            }
+        }
+
+        logger.info { "Stopped application" }
     }
 
     private fun updateCommandLog(command: String) {
@@ -358,9 +402,15 @@ open class AppState(private val window: ComposeWindow?) {
         commandLogContent = commandLog.joinToString("\n")
     }
 
+    private fun logRequestResponse(message: String, type: String = "ERROR") {
+        val errorMessage = "${type}: $message"
+        logger.error { errorMessage }
+        updateMessageLog(errorMessage)
+    }
+
     private fun updateMessageLog(message: String) {
         if (message.isEmpty()) {
-            commandLogContent = ""
+            messageLogContent = ""
             return
         }
         messageLog.add(message)
