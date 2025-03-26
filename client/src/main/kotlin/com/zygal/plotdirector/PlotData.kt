@@ -19,13 +19,16 @@ class PlotData(private val plotFilePath: String) {
         options = opt
         definitions = def
         commands = cmd.toMutableList()
-        commandCount = commands.size
+        commandCount = commandCount(cmd)
     }
 
     fun nextCommand(): String? {
         val command = commands.removeFirst().takeIf { it.isNotEmpty() }
         return command
     }
+
+    private fun commandCount(commands: List<String>) =
+        commands.count { !it.startsWith("#")}
 
     private fun loadFile(): Triple<List<String>, List<String>, List<String>> {
         val options = mutableListOf<String>()
