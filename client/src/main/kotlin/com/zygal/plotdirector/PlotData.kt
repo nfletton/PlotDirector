@@ -27,6 +27,10 @@ class PlotData(private val plotFilePath: String) {
         return command
     }
 
+    fun pushCommand(command: String) {
+        commands.addFirst(command)
+    }
+
     private fun commandCount(commands: List<String>) =
         commands.count { !it.startsWith("#")}
 

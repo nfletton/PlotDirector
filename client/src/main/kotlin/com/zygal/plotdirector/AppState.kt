@@ -271,24 +271,15 @@ open class AppState(private val window: ComposeWindow?) {
                 val commandName = command.substringBefore(' ')
                 when (commandName) {
                     "pause" -> {
+                        processCommand("go_home", stub)
+                        logMessage("Paused: ${command.substringAfter(' ')}")
                         nextState(States.PAUSED)
-                        logMessage(command)
                     }
                     "#" -> {
                         logCommand(command)
                     }
                     else -> {
-                        try {
-                            val commandRequest = PlotServiceOuterClass.CommandRequest.newBuilder()
-                                .setCommand(command).build()
-                            val response = stub.processCommand(commandRequest)
-                            if (!response.success) logStatusMessage(response.message)
-                            stats.progressCount++
-                            updateStatus()
-                            logCommand(command)
-                        } catch (e: Exception) {
-                            logException("Process command '$command'", e)
-                        }
+                        processCommand(command, stub)
                     }
                 }
             }
@@ -296,6 +287,20 @@ open class AppState(private val window: ComposeWindow?) {
             yield()
         }
         nextState(States.FINISHED)
+    }
+
+    private fun processCommand(command: String, stub: PlotServiceGrpc.PlotServiceBlockingStub) {
+        try {
+            val commandRequest = PlotServiceOuterClass.CommandRequest.newBuilder()
+                .setCommand(command).build()
+            val response = stub.processCommand(commandRequest)
+            if (!response.success) logStatusMessage(response.message)
+            stats.progressCount++
+            updateStatus()
+            logCommand(command)
+        } catch (e: Exception) {
+            logException("Process command '$command'", e)
+        }
     }
 
     private fun walkCarriage(axis: Axis, distance: Float) {
@@ -356,8 +361,7 @@ open class AppState(private val window: ComposeWindow?) {
     }
 
     private fun pausePlot() {
-        logMessage("Plot manually paused")
-        nextState(States.PAUSED)
+        plotData?.pushCommand("pause Plot manually paused")
     }
 
     private fun clearPlot() {
